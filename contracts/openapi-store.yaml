@@ -1,0 +1,2747 @@
+openapi: 3.1.0
+info:
+  title: NestKart Store API
+  version: 1.0.0
+  description: >
+    Official store backend API for NestKart (Document 1 specification).
+    Provides authentication, order management, shipments, evidence handling,
+    returns transition engine, refunds, admin backoffice, mail threads, carrier simulation,
+    and demo control center for SellerShield AI.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development store API server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: User, customer and service authentication, session rotation and key discovery
+  - name: orders
+    description: Customer orders, shipment tracking, evidence upload and refundable lookups
+  - name: returns
+    description: Customer return requests, transitions, approvals, and cancellations
+  - name: refunds
+    description: Autonomous and seller-authorized refunds, holds, release, and customer history
+  - name: admin
+    description: Seller backoffice operations, inspection, cancellation, and autonomy caps
+  - name: mail
+    description: Simulated customer-seller mailbox threads with DKIM/verified-sender validation
+  - name: sim
+    description: Carrier simulation endpoints for tracking events and test playouts
+  - name: demo
+    description: Demo control center, simulated clock, fault injection, and scenario loading
+
+paths:
+  # =========================================================================
+  # AUTH
+  # =========================================================================
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Register customer account (P1)
+      operationId: register_customer
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Customer account registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: User login
+      operationId: login
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully, returns JWT access token and sets refresh cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '429':
+          $ref: '#/components/responses/Error429'
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh access token
+      operationId: refresh_token
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Access token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Logout and revoke refresh token
+      operationId: logout
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Get currently authenticated user profile
+      operationId: get_current_user
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Current user profile and claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /.well-known/jwks.json:
+    get:
+      tags: [auth]
+      summary: Get JSON Web Key Set for token signature verification
+      operationId: get_jwks
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Public JWKS keys for verifying access tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKSResponse'
+
+  /auth/token:
+    post:
+      tags: [auth]
+      summary: Issue service token using client credentials
+      operationId: issue_service_token
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTokenRequest'
+      responses:
+        '200':
+          description: Service JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTokenResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /clock:
+    get:
+      tags: [auth]
+      summary: Get public simulated clock time
+      operationId: get_public_clock
+      security: []
+      description: Always-on read-only access to simulated store clock for synchronization.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Current simulated UTC clock time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicClockResponse'
+
+  # =========================================================================
+  # ORDERS
+  # =========================================================================
+  /orders:
+    get:
+      tags: [orders]
+      summary: List customer orders
+      operationId: list_orders
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of customer orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /orders/{id}:
+    get:
+      tags: [orders]
+      summary: Get order details
+      operationId: get_order
+      description: Returns order by ID for the calling customer. Unowned orders yield uniform 404.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detailed order record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /orders/{id}/shipment:
+    get:
+      tags: [orders]
+      summary: Get order shipment status, tracking and timeline events
+      operationId: get_order_shipment
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shipment status and event timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderShipmentResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /orders/{id}/evidence:
+    post:
+      tags: [orders]
+      summary: Upload photographic evidence for an order
+      operationId: upload_order_evidence
+      description: Upload evidence image (JPG, PNG, WebP up to 2 MB; max 3 per order).
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file (max 2 MB; jpg, png, webp)
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Evidence image successfully uploaded and sanitized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceItem'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '422':
+          $ref: '#/components/responses/Error422'
+    get:
+      tags: [orders]
+      summary: List evidence uploaded for an order
+      operationId: list_order_evidence
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of evidence items for the order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /evidence/{id}:
+    get:
+      tags: [orders]
+      summary: Retrieve evidence file metadata or content
+      operationId: get_evidence
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Evidence metadata and retrieval access
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceItem'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /orders/{id}/refundable:
+    get:
+      tags: [orders]
+      summary: Check remaining refundable quantities and max amount
+      operationId: get_order_refundable
+      description: Returns per-item refundable eligibility, remaining quantities and max net refundable paise.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: items
+          in: query
+          required: false
+          description: Optional list of item quantities to evaluate in format ITEM_ID:QTY,ITEM_ID:QTY
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refundable breakdown and remaining balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundableCheckResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  # =========================================================================
+  # RETURNS
+  # =========================================================================
+  /orders/{id}/returns:
+    post:
+      tags: [returns]
+      summary: Create return request for order items
+      operationId: create_return
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReturnRequest'
+            examples:
+              customerReturn:
+                summary: Return defective cookware item
+                value:
+                  items:
+                    - item_id: "ITEM-101"
+                      qty: 1
+                      condition_note: "Handle loose on arrival"
+                  reason_code: "defective"
+                  reason_text: "Cookware handle loose on unboxing"
+                  resolution: "refund"
+      responses:
+        '201':
+          description: Return requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /returns:
+    get:
+      tags: [returns]
+      summary: List returns
+      operationId: list_returns
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of returns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /returns/{id}:
+    get:
+      tags: [returns]
+      summary: Get return details
+      operationId: get_return
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Return record details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /returns/{id}/transition:
+    post:
+      tags: [returns]
+      summary: Transition return state along valid lifecycle edges
+      operationId: transition_return
+      description: Triggered by seller or agent-executor (within autonomy cap).
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionReturnRequest'
+      responses:
+        '200':
+          description: Return transitioned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /returns/{id}/cancel:
+    post:
+      tags: [returns]
+      summary: Cancel customer return request before approval
+      operationId: cancel_return
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelReturnRequest'
+      responses:
+        '200':
+          description: Return request cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  # =========================================================================
+  # REFUNDS
+  # =========================================================================
+  /orders/{id}/refund-reservations:
+    post:
+      tags: [refunds]
+      summary: Reserve atomic refund hold for an order
+      operationId: create_refund_reservation
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRefundReservationRequest'
+            examples:
+              reserveCookware:
+                summary: Reserve refund hold for defective item
+                value:
+                  amount_paise: 120000
+                  return_id: "RET-1042"
+                  method: "original"
+      responses:
+        '201':
+          description: Refund reservation created in reserved status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /refunds/{id}/authorize:
+    post:
+      tags: [refunds]
+      summary: Seller authorization for refund release
+      operationId: authorize_refund
+      description: Records seller authorization for refunds above autonomy cap.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizeRefundRequest'
+            examples:
+              authorizeHighValue:
+                summary: Seller authorizes full refund
+                value:
+                  amount_paise: 120000
+                  note: "Approved per photo evidence inspection"
+      responses:
+        '200':
+          description: Refund authorized by seller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /refunds/{id}/release:
+    post:
+      tags: [refunds]
+      summary: Release reserved refund hold to gateway
+      operationId: release_refund
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+            examples:
+              releaseExecution:
+                summary: Execute refund release
+                value: {}
+      responses:
+        '200':
+          description: Refund moved to processing and submitted to SimPay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /refunds/{id}/cancel-reservation:
+    post:
+      tags: [refunds]
+      summary: Cancel refund hold reservation
+      operationId: cancel_refund_reservation
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Refund hold cancelled and released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /refunds/{id}:
+    get:
+      tags: [refunds]
+      summary: Get refund details and gateway reference
+      operationId: get_refund
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund transaction record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /orders/{id}/refunds:
+    get:
+      tags: [refunds]
+      summary: List all refunds for an order
+      operationId: list_order_refunds
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of refunds for the order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /customers/{id}/refund-summary:
+    get:
+      tags: [refunds]
+      summary: Get customer refund summary and 30-day cumulative totals
+      operationId: get_customer_refund_summary
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Cumulative refund history summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerRefundSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  # =========================================================================
+  # ADMIN
+  # =========================================================================
+  /admin/orders:
+    get:
+      tags: [admin]
+      summary: Admin list all orders across store
+      operationId: admin_list_orders
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of orders for seller admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /admin/orders/{id}:
+    get:
+      tags: [admin]
+      summary: Admin get order details
+      operationId: admin_get_order
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /admin/customers/{id}:
+    get:
+      tags: [admin]
+      summary: Admin get customer profile and risk facts
+      operationId: admin_get_customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer risk profile facts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomerDetailResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /admin/returns/{id}/receive:
+    post:
+      tags: [admin]
+      summary: Record received return package at warehouse
+      operationId: admin_receive_return
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Return marked received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /admin/returns/{id}/inspect:
+    post:
+      tags: [admin]
+      summary: Record warehouse inspection outcome for return
+      operationId: admin_inspect_return
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [outcome]
+              properties:
+                outcome:
+                  type: string
+                  enum: [inspected_ok, inspection_failed]
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Inspection recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Return'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /admin/orders/{id}/cancel:
+    post:
+      tags: [admin]
+      summary: Cancel order before shipment
+      operationId: admin_cancel_order
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /admin/settings:
+    get:
+      tags: [admin]
+      summary: Read store autonomy settings and caps
+      operationId: admin_get_settings
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Current store autonomy settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreSettings'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+    put:
+      tags: [admin]
+      summary: Update store autonomy limits and caps
+      operationId: admin_update_settings
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/If-Match'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminSettingsRequest'
+      responses:
+        '200':
+          description: Store settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreSettings'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '412':
+          description: Precondition Failed (version mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # =========================================================================
+  # MAIL
+  # =========================================================================
+  /mail/inbox:
+    get:
+      tags: [mail]
+      summary: List mailbox messages
+      operationId: list_mail_messages
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Mailbox messages list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /mail/threads/{id}:
+    get:
+      tags: [mail]
+      summary: Get mail thread details and message chain
+      operationId: get_mail_thread
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message thread history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailThreadResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /mail/send:
+    post:
+      tags: [mail]
+      summary: Send email message through simulated mail service
+      operationId: send_mail_message
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMailRequest'
+      responses:
+        '201':
+          description: Mail message sent and recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessage'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /mail/{id}/read:
+    post:
+      tags: [mail]
+      summary: Mark mail message as read
+      operationId: mark_mail_read
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Message marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessage'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  # =========================================================================
+  # SIM
+  # =========================================================================
+  /sim/carrier/shipments/{id}:
+    get:
+      tags: [sim]
+      summary: View simulated carrier shipment state
+      operationId: sim_get_carrier_shipment
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Simulated carrier state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /sim/carrier/shipments/{id}/advance:
+    post:
+      tags: [sim]
+      summary: Advance simulated carrier shipment status
+      operationId: sim_advance_carrier_shipment
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimCarrierAdvanceRequest'
+      responses:
+        '200':
+          description: Shipment advanced in carrier simulation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /sim/carrier/scenarios/{id}/play:
+    post:
+      tags: [sim]
+      summary: Play scripted carrier scenario
+      operationId: sim_play_carrier_scenario
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimCarrierScenarioPlayRequest'
+      responses:
+        '200':
+          description: Scenario playout initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  success:
+                    type: boolean
+                  scenario_id:
+                    type: string
+                required: [success, scenario_id]
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  # =========================================================================
+  # DEMO
+  # =========================================================================
+  /demo/reset:
+    post:
+      tags: [demo]
+      summary: Reset and reseed store database
+      operationId: demo_reset
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Store database reset to initial seed data
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  reset:
+                    type: boolean
+                  seeded_orders:
+                    type: integer
+                required: [reset]
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /demo/clock:
+    get:
+      tags: [demo]
+      summary: Read simulated clock controls and offset
+      operationId: demo_get_clock
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Current clock settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicClockResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+    post:
+      tags: [demo]
+      summary: Advance or set simulated clock
+      operationId: demo_set_clock
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoClockRequest'
+      responses:
+        '200':
+          description: Clock updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicClockResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /demo/faults:
+    get:
+      tags: [demo]
+      summary: Read active simulated faults
+      operationId: demo_get_faults
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: List of active faults
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  faults:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        name:
+                          type: string
+                        enabled:
+                          type: boolean
+                        mode:
+                          type: string
+                      required: [name, enabled]
+                required: [faults]
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+    post:
+      tags: [demo]
+      summary: Enable or disable simulated fault injections
+      operationId: demo_set_faults
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoFaultsRequest'
+      responses:
+        '200':
+          description: Fault settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  applied:
+                    type: boolean
+                required: [applied]
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /demo/state:
+    get:
+      tags: [demo]
+      summary: Get full demo state and summary
+      operationId: demo_get_state
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: System snapshot for demo control panel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoStateResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /demo/scenarios/{id}/load:
+    post:
+      tags: [demo]
+      summary: Load a predefined demo scenario
+      operationId: demo_load_scenario
+      x-demo-only: true
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoScenarioLoadRequest'
+      responses:
+        '200':
+          description: Scenario loaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  scenario_id:
+                    type: string
+                  loaded:
+                    type: boolean
+                required: [scenario_id, loaded]
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+# =========================================================================
+# WEBHOOKS
+# =========================================================================
+webhooks:
+  order.created:
+    post:
+      summary: Emitted when order is placed
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  order.updated:
+    post:
+      summary: Emitted when order status changes
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  shipment.updated:
+    post:
+      summary: Emitted when carrier event updates shipment status
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  shipment.delayed:
+    post:
+      summary: Emitted when clock passes ETA and shipment is not delivered
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  return.updated:
+    post:
+      summary: Emitted when return request changes status
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  refund.updated:
+    post:
+      summary: Emitted when refund hold, authorization or release changes status
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+  mail.inbound:
+    post:
+      summary: Emitted when new mail message is received in thread
+      parameters:
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook received successfully
+
+# =========================================================================
+# COMPONENTS
+# =========================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        RS256 JWT issued by NestKart Store. Claims: sub (user_id), role
+        (customer, seller_owner, seller_staff, service), customer_id,
+        aud: [nestkart-api, sellershield-agent], iss: nestkart, exp, auth_time.
+
+  parameters:
+    X-Request-ID:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: Unique end-to-end request tracing identifier
+      schema:
+        type: string
+    Idempotency-Key:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Unique client key for mutation idempotency
+      schema:
+        type: string
+    If-Match:
+      name: If-Match
+      in: header
+      required: true
+      description: Entity version tag for optimistic concurrency control
+      schema:
+        type: integer
+    X-Store-Signature:
+      name: X-Store-Signature
+      in: header
+      required: true
+      description: HMAC-SHA256 signature of timestamp.body using WEBHOOK_SECRET
+      schema:
+        type: string
+    X-Store-Timestamp:
+      name: X-Store-Timestamp
+      in: header
+      required: true
+      description: UTC unix timestamp in seconds when webhook was dispatched
+      schema:
+        type: integer
+    X-Event-Id:
+      name: X-Event-Id
+      in: header
+      required: true
+      description: Unique UUID for the outbox event to protect against duplicates
+      schema:
+        type: string
+
+  responses:
+    Error400:
+      description: Validation error or invalid payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error401:
+      description: Authentication required or invalid/expired token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error403:
+      description: Forbidden - insufficient role or authorization
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error404:
+      description: Resource not found (uniform 404 for nonexistent or unowned items)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            uniformNotFound:
+              summary: Uniform 404 order lookup error
+              value:
+                error:
+                  code: "not_found"
+                  message: "Order ORD-9999 was not found"
+                  request_id: "req-abc-123"
+                  details: {}
+    Error409:
+      description: State conflict, duplicate request, or autonomy limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error422:
+      description: Unprocessable entity or semantic validation failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error429:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # -----------------------------------------------------------------------
+    # Shared Error Model
+    # -----------------------------------------------------------------------
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, request_id]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+            request_id:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+    ErrorCode:
+      type: string
+      enum:
+        - not_found
+        - forbidden
+        - invalid_state
+        - limit_exceeded
+        - duplicate
+        - validation_error
+        - upstream_unavailable
+        - idempotency_mismatch
+
+    # -----------------------------------------------------------------------
+    # State Enums
+    # -----------------------------------------------------------------------
+    OrderStatus:
+      type: string
+      enum:
+        - placed
+        - packed
+        - shipped
+        - out_for_delivery
+        - delivered
+        - cancelled
+
+    PaymentMethod:
+      type: string
+      enum:
+        - prepaid
+        - cod
+
+    PaymentStatus:
+      type: string
+      enum:
+        - paid
+        - pending
+        - cod_pending
+        - cod_collected
+        - refunded
+        - partially_refunded
+
+    ShipmentStatus:
+      type: string
+      enum:
+        - label_created
+        - picked_up
+        - in_transit
+        - out_for_delivery
+        - delivered
+        - exception
+        - lost
+        - rto
+
+    ReturnStatus:
+      type: string
+      enum:
+        - requested
+        - approved
+        - rejected
+        - cancelled
+        - pickup_scheduled
+        - in_transit_back
+        - received
+        - inspected_ok
+        - inspection_failed
+        - completed
+
+    ReturnReasonCode:
+      type: string
+      enum:
+        - defective
+        - damaged
+        - wrong_item
+        - not_as_described
+        - changed_mind
+        - arrived_late
+
+    ReturnResolution:
+      type: string
+      enum:
+        - refund
+        - store_credit
+
+    RefundStatus:
+      type: string
+      enum:
+        - reserved
+        - authorized
+        - processing
+        - completed
+        - failed
+        - released
+
+    RefundMethod:
+      type: string
+      enum:
+        - original
+        - store_credit
+        - upi_payout
+
+    # -----------------------------------------------------------------------
+    # Auth Models
+    # -----------------------------------------------------------------------
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+
+    RegisterResponse:
+      type: object
+      additionalProperties: false
+      required: [user_id, customer_id, email, status]
+      properties:
+        user_id:
+          type: string
+        customer_id:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in, user]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          example: 900
+        user:
+          $ref: '#/components/schemas/CurrentUserResponse'
+
+    RefreshTokenResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+
+    CurrentUserResponse:
+      type: object
+      additionalProperties: false
+      required: [user_id, email, role, display_name]
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [customer, seller_owner, seller_staff, service]
+        customer_id:
+          type: string
+          nullable: true
+        display_name:
+          type: string
+
+    ServiceTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [client_id, client_secret]
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+
+    ServiceTokenResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in, scopes]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        scopes:
+          type: array
+          items:
+            type: string
+
+    JWKSResponse:
+      type: object
+      additionalProperties: false
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/JWKKey'
+
+    JWKKey:
+      type: object
+      additionalProperties: false
+      required: [kty, alg, use, kid, n, e]
+      properties:
+        kty:
+          type: string
+        alg:
+          type: string
+        use:
+          type: string
+        kid:
+          type: string
+        n:
+          type: string
+        e:
+          type: string
+
+    PublicClockResponse:
+      type: object
+      additionalProperties: false
+      required: [now_utc, mode]
+      properties:
+        now_utc:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [realtime, simulated, frozen]
+        offset_seconds:
+          type: integer
+
+    # -----------------------------------------------------------------------
+    # Order & Shipment Models
+    # -----------------------------------------------------------------------
+    Address:
+      type: object
+      additionalProperties: false
+      required: [full_name, line1, city, state, postal_code, country]
+      properties:
+        full_name:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+
+    OrderItem:
+      type: object
+      additionalProperties: false
+      required: [item_id, sku, name, qty, unit_price_paise, discount_alloc_paise, line_paid_paise]
+      properties:
+        item_id:
+          type: string
+        sku:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+        unit_price_paise:
+          type: integer
+          minimum: 0
+        discount_alloc_paise:
+          type: integer
+          minimum: 0
+        line_paid_paise:
+          type: integer
+          minimum: 0
+        flags:
+          type: object
+          additionalProperties: true
+
+    Order:
+      type: object
+      additionalProperties: false
+      required:
+        - order_id
+        - customer_id
+        - status
+        - payment_method
+        - payment_status
+        - subtotal_paise
+        - discount_paise
+        - shipping_fee_paise
+        - total_paise
+        - items
+        - placed_at
+        - version
+      properties:
+        order_id:
+          type: string
+        customer_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethod'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatus'
+        subtotal_paise:
+          type: integer
+          minimum: 0
+        discount_paise:
+          type: integer
+          minimum: 0
+        shipping_fee_paise:
+          type: integer
+          minimum: 0
+        total_paise:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        ship_to:
+          $ref: '#/components/schemas/Address'
+        placed_at:
+          type: string
+          format: date-time
+        shipped_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+
+    OrderListResponse:
+      type: object
+      additionalProperties: false
+      required: [orders]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        next_cursor:
+          type: string
+          nullable: true
+
+    ShipmentEvent:
+      type: object
+      additionalProperties: false
+      required: [event_id, occurred_at, status, location]
+      properties:
+        event_id:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        location:
+          type: string
+        note:
+          type: string
+
+    Shipment:
+      type: object
+      additionalProperties: false
+      required: [shipment_id, order_id, carrier, tracking_no, status, events]
+      properties:
+        shipment_id:
+          type: string
+        order_id:
+          type: string
+        carrier:
+          type: string
+        tracking_no:
+          type: string
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        eta_at:
+          type: string
+          format: date-time
+          nullable: true
+        delayed:
+          type: boolean
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentEvent'
+
+    OrderShipmentResponse:
+      type: object
+      additionalProperties: false
+      required: [order_id, shipment]
+      properties:
+        order_id:
+          type: string
+        shipment:
+          $ref: '#/components/schemas/Shipment'
+
+    EvidenceItem:
+      type: object
+      additionalProperties: false
+      required: [evidence_id, order_id, content_type, size_bytes, created_at]
+      properties:
+        evidence_id:
+          type: string
+        order_id:
+          type: string
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size_bytes:
+          type: integer
+          maximum: 2097152
+        created_at:
+          type: string
+          format: date-time
+        note:
+          type: string
+
+    EvidenceListResponse:
+      type: object
+      additionalProperties: false
+      required: [evidence]
+      properties:
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceItem'
+
+    RefundableItemStatus:
+      type: object
+      additionalProperties: false
+      required: [item_id, original_qty, remaining_qty, line_paid_paise, refundable_paise]
+      properties:
+        item_id:
+          type: string
+        original_qty:
+          type: integer
+        remaining_qty:
+          type: integer
+        line_paid_paise:
+          type: integer
+          minimum: 0
+        refundable_paise:
+          type: integer
+          minimum: 0
+
+    RefundableCheckResponse:
+      type: object
+      additionalProperties: false
+      required: [order_id, max_refundable_paise, items]
+      properties:
+        order_id:
+          type: string
+        max_refundable_paise:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundableItemStatus'
+
+    # -----------------------------------------------------------------------
+    # Return Models
+    # -----------------------------------------------------------------------
+    ReturnItemRequest:
+      type: object
+      additionalProperties: false
+      required: [item_id, qty]
+      properties:
+        item_id:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+        condition_note:
+          type: string
+
+    CreateReturnRequest:
+      type: object
+      additionalProperties: false
+      required: [items, reason_code, resolution]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ReturnItemRequest'
+        reason_code:
+          $ref: '#/components/schemas/ReturnReasonCode'
+        reason_text:
+          type: string
+        resolution:
+          $ref: '#/components/schemas/ReturnResolution'
+
+    TransitionReturnRequest:
+      type: object
+      additionalProperties: false
+      required: [to, reason]
+      properties:
+        to:
+          $ref: '#/components/schemas/ReturnStatus'
+        reason:
+          type: string
+
+    CancelReturnRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+
+    ReturnItem:
+      type: object
+      additionalProperties: false
+      required: [item_id, qty]
+      properties:
+        item_id:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+        condition_note:
+          type: string
+
+    Return:
+      type: object
+      additionalProperties: false
+      required:
+        - return_id
+        - order_id
+        - customer_id
+        - status
+        - reason_code
+        - resolution
+        - items
+        - created_at
+        - version
+      properties:
+        return_id:
+          type: string
+        order_id:
+          type: string
+        customer_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/ReturnStatus'
+        reason_code:
+          $ref: '#/components/schemas/ReturnReasonCode'
+        reason_text:
+          type: string
+        resolution:
+          $ref: '#/components/schemas/ReturnResolution'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnItem'
+        approved_by:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+
+    ReturnListResponse:
+      type: object
+      additionalProperties: false
+      required: [returns]
+      properties:
+        returns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Return'
+        next_cursor:
+          type: string
+          nullable: true
+
+    # -----------------------------------------------------------------------
+    # Refund Models
+    # -----------------------------------------------------------------------
+    CreateRefundReservationRequest:
+      type: object
+      additionalProperties: false
+      required: [amount_paise, method]
+      properties:
+        amount_paise:
+          type: integer
+          minimum: 1
+        return_id:
+          type: string
+        method:
+          $ref: '#/components/schemas/RefundMethod'
+
+    AuthorizeRefundRequest:
+      type: object
+      additionalProperties: false
+      required: [amount_paise]
+      properties:
+        amount_paise:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+
+    Refund:
+      type: object
+      additionalProperties: false
+      required:
+        - refund_id
+        - order_id
+        - customer_id
+        - amount_paise
+        - method
+        - status
+        - created_at
+      properties:
+        refund_id:
+          type: string
+        order_id:
+          type: string
+        return_id:
+          type: string
+          nullable: true
+        customer_id:
+          type: string
+        amount_paise:
+          type: integer
+          minimum: 0
+        method:
+          $ref: '#/components/schemas/RefundMethod'
+        status:
+          $ref: '#/components/schemas/RefundStatus'
+        gateway_ref:
+          type: string
+          nullable: true
+        authorized_by:
+          type: string
+          nullable: true
+        authorized_amount_paise:
+          type: integer
+          nullable: true
+          minimum: 0
+        authorized_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RefundListResponse:
+      type: object
+      additionalProperties: false
+      required: [refunds]
+      properties:
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refund'
+
+    CustomerRefundSummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, days, total_refunded_paise, refund_count, return_count]
+      properties:
+        customer_id:
+          type: string
+        days:
+          type: integer
+        total_refunded_paise:
+          type: integer
+          minimum: 0
+        refund_count:
+          type: integer
+        return_count:
+          type: integer
+
+    # -----------------------------------------------------------------------
+    # Admin & Store Settings Models
+    # -----------------------------------------------------------------------
+    AdminCustomerDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, full_name, email, joined_at, returns_30d, refund_ratio_90d, account_age_days]
+      properties:
+        customer_id:
+          type: string
+        full_name:
+          type: string
+        email:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+        returns_30d:
+          type: integer
+        refund_ratio_90d:
+          type: number
+        account_age_days:
+          type: integer
+
+    StoreSettings:
+      type: object
+      additionalProperties: false
+      required: [autonomy_cap_paise, autonomy_daily_cap_paise, version]
+      properties:
+        autonomy_cap_paise:
+          type: integer
+          minimum: 0
+          example: 50000
+        autonomy_daily_cap_paise:
+          type: integer
+          minimum: 0
+          example: 500000
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+
+    UpdateAdminSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [autonomy_cap_paise, autonomy_daily_cap_paise]
+      properties:
+        autonomy_cap_paise:
+          type: integer
+          minimum: 0
+        autonomy_daily_cap_paise:
+          type: integer
+          minimum: 0
+
+    # -----------------------------------------------------------------------
+    # Mail Models
+    # -----------------------------------------------------------------------
+    MailMessage:
+      type: object
+      additionalProperties: false
+      required: [message_id, thread_id, direction, from_addr, to_addr, subject, body_text, verified_sender, created_at]
+      properties:
+        message_id:
+          type: string
+        thread_id:
+          type: string
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        channel:
+          type: string
+          enum: [email, whatsapp_sim]
+        from_addr:
+          type: string
+        to_addr:
+          type: string
+        subject:
+          type: string
+        body_text:
+          type: string
+        verified_sender:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    MailMessageListResponse:
+      type: object
+      additionalProperties: false
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailMessage'
+
+    MailThreadResponse:
+      type: object
+      additionalProperties: false
+      required: [thread_id, messages]
+      properties:
+        thread_id:
+          type: string
+        subject:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailMessage'
+
+    SendMailRequest:
+      type: object
+      additionalProperties: false
+      required: [to_addr, subject, body_text]
+      properties:
+        thread_id:
+          type: string
+        to_addr:
+          type: string
+        subject:
+          type: string
+        body_text:
+          type: string
+        channel:
+          type: string
+          enum: [email, whatsapp_sim]
+          default: email
+
+    # -----------------------------------------------------------------------
+    # Carrier & Demo Simulation Models
+    # -----------------------------------------------------------------------
+    SimCarrierAdvanceRequest:
+      type: object
+      additionalProperties: false
+      required: [status, location]
+      properties:
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        location:
+          type: string
+        note:
+          type: string
+
+    SimCarrierScenarioPlayRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        speed_multiplier:
+          type: number
+          default: 1.0
+
+    DemoClockRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        advance_seconds:
+          type: integer
+        freeze_at:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [realtime, simulated, frozen]
+
+    DemoFaultsRequest:
+      type: object
+      additionalProperties: false
+      required: [fault_name, enabled]
+      properties:
+        fault_name:
+          type: string
+        enabled:
+          type: boolean
+        params:
+          type: object
+          additionalProperties: true
+
+    DemoStateResponse:
+      type: object
+      additionalProperties: false
+      required: [clock, seeded_orders_count, active_returns_count, active_faults]
+      properties:
+        clock:
+          $ref: '#/components/schemas/PublicClockResponse'
+        seeded_orders_count:
+          type: integer
+        active_returns_count:
+          type: integer
+        active_faults:
+          type: array
+          items:
+            type: string
+
+    DemoScenarioLoadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reset_first:
+          type: boolean
+          default: true
+
+    # -----------------------------------------------------------------------
+    # Webhook Outbox Payload Models
+    # -----------------------------------------------------------------------
+    WebhookEnvelope:
+      type: object
+      additionalProperties: false
+      required: [event_id, type, occurred_at, resource_version, data]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - order.created
+            - order.updated
+            - shipment.updated
+            - shipment.delayed
+            - return.updated
+            - refund.updated
+            - mail.inbound
+        occurred_at:
+          type: string
+          format: date-time
+        resource_version:
+          type: integer
+        data:
+          type: object
+          additionalProperties: true
+
