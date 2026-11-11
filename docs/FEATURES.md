@@ -10,6 +10,7 @@ Known limits:
 Do not change because:
 Related: BUG ids, ADR ids, spec sections
 
+<<<<<<< HEAD
 ## F-A36 Phase 3 Red-Team and Gate G3 Acceptance Suite   [done]
 What it does:
 Provides rigorous automated red-team security, isolation, and robustness verification across 30 attack/clumsy scenarios and 9 Gate G3 end-to-end acceptance tests.
@@ -704,6 +705,9 @@ Do not change because:
 - Test integrity is the core guarantee preventing agents from cheating tests during autonomous code generation.
 Related: ADR-014, KP-10, KP-22, AGENTS.md rule 8.
 
+=======
+<<<<<<< HEAD
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 ## F-A00 Contracts   [done]
 What it does:
 Defines and freezes the OpenAPI 3.1 specifications for Store and Agent services, establishing the authoritative contract for W1 (backend), W2 (frontend), and A (agent).
@@ -863,6 +867,7 @@ Do not change because:
 - Multi-provider fallback and deterministic reliability form the core story for demo stability and evaluation scoring.
 Related: ADR-003, ADR-013, KP-06, KP-09, KP-13, KP-18, 02-agent.md sections 3, 4.2, 14.7, 21 amendments 7 & 8.
 
+<<<<<<< HEAD
 ## F-A07b Policy documents and refund calculator   [done]
 What it does:
 Provides immutable versioned policy documents (`v1`, `v2`, `v3`) with strict validation, customer-safe policy summarization without internal limits or risk leakage, and an exact integer-paise refund calculator implementing Spec §7.4.
@@ -1047,3 +1052,30 @@ F-A07 Policy engine (done)                F-A18 Proactive monitor
 F-A08 FactSheet and verifier (done)       F-A19 Push stream
 F-A09 Tool gateway (done)                 F-A20 Evaluation harness
 F-A10 Orchestrator (done)
+=======
+Registry (planned):
+F-A00 Contracts (done)                    F-A11 Proposals and confirm
+F-A01 Config and logging (done)           F-A12 Executor saga
+F-A02 Error envelope and request ids (done) F-A13 Approvals
+F-A03 Database layer (done)               F-A14 Audit chain
+F-A04 Money and time helpers (done)       F-A15 Cases and handler model
+F-A05 JWT and JWKS verification (done)     F-A16 Memory
+F-A06 LLM provider chain (done)            F-A17 Notification outbox
+F-A07 Policy engine                       F-A18 Proactive monitor
+F-A08 FactSheet and verifier              F-A19 Push stream
+F-A09 Tool gateway                        F-A20 Evaluation harness
+F-A10 Orchestrator
+=======
+Registry (planned):
+F-A01 Config and logging              F-A11 Proposals and confirm
+F-A02 Error envelope and request ids  F-A12 Executor saga
+F-A03 Database layer                  F-A13 Approvals
+F-A04 Money and time helpers          F-A14 Audit chain
+F-A05 JWT and JWKS verification       F-A15 Cases and handler model
+F-A06 LLM provider chain              F-A16 Memory
+F-A07 Policy engine                   F-A17 Notification outbox
+F-A08 FactSheet and verifier          F-A18 Proactive monitor
+F-A09 Tool gateway                    F-A19 Push stream
+F-A10 Orchestrator                    F-A20 Evaluation harness
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

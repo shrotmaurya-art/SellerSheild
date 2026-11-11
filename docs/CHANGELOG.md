@@ -7,6 +7,7 @@ What changed:
 Verification run (commands and result summary):
 Follow-ups:
 
+<<<<<<< HEAD
 ## 2026-11-11 T3.6 Lean red-team and gate tests
 Files: scenarios/redteam/phase3.yaml, agent/tests/redteam/test_phase3.py, agent/tests/e2e/test_gate_g3.py, docs/notes/T3.6.md, docs/CHANGELOG.md, docs/FEATURES.md, docs/TASKS.md, docs/STATE.md
 What changed:
@@ -1027,6 +1028,10 @@ Follow-ups:
 - Proceed to T1.1 (Domain models, StoreClient interface and fixture store).
 
 ## 2026-11-11 .10 LLM adapter and provider chain
+=======
+<<<<<<< HEAD
+## 2026-11-11 T0.10 LLM adapter and provider chain
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: agent/src/sellershield_agent/llm/__init__.py, agent/src/sellershield_agent/llm/config.py, agent/src/sellershield_agent/llm/client.py, agent/src/sellershield_agent/llm/cache.py, agent/src/sellershield_agent/llm/chain.py, agent/src/sellershield_agent/llm/structured.py, agent/scripts/llm_smoke.py, agent/tests/test_llm.py, docs/CHANGELOG.md, docs/FEATURES.md, docs/PITFALLS.md, docs/DECISIONS.md, docs/TASKS.md, docs/STATE.md
 What changed:
 - Implemented `llm/config.py`: `ProviderConfig` and `ProviderCapabilities` (`supports_json_schema`, `supports_tools`, `parallel_tools`, all defaulting to `False` for unknown providers) with automatic capability detection for Gemini, Groq, OpenRouter, and OpenAI, and `load_providers_from_settings()` building providers from environment (`LLM_PRIMARY_*`, `LLM_SECONDARY_*`, `LLM_TERTIARY_*`).
@@ -1046,7 +1051,11 @@ Follow-ups:
 - Human verification of `scripts/llm_smoke.py` with real keys in `agent/.env`.
 - Proceed to T0.11 (Gate G0, local commit and tag).
 
+<<<<<<< HEAD
 ## 2026-11-11 .9 JWT and JWKS verification
+=======
+## 2026-11-11 T0.9 JWT and JWKS verification
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: agent/src/sellershield_agent/auth/__init__.py, agent/src/sellershield_agent/auth/models.py, agent/src/sellershield_agent/auth/jwks.py, agent/src/sellershield_agent/auth/verify.py, agent/src/sellershield_agent/auth/deps.py, agent/src/sellershield_agent/errors.py, agent/src/sellershield_agent/config.py, agent/src/sellershield_agent/api/health.py, agent/tests/test_auth.py, agent/tests/test_health.py, agent/tests/test_money.py, agent/tests/conftest.py, docs/CHANGELOG.md, docs/FEATURES.md, docs/PITFALLS.md, docs/DECISIONS.md, docs/TASKS.md, docs/STATE.md
 What changed:
 - Implemented `auth/models.py` with `Role` StrEnum (`customer`, `seller_staff`, `seller_owner`, `service`) and immutable `Principal` model (`user_id`, `role`, `customer_id`, `scopes`, `auth_time`, `jti`, `token_exp`).
@@ -1067,7 +1076,11 @@ Verification run (commands and result summary):
 Follow-ups:
 - Proceed to T0.10 (LLM adapter and provider chain).
 
+<<<<<<< HEAD
 ## 2026-11-11  Database, clock, money and time helpers
+=======
+## 2026-11-11 T0.8 Database, clock, money and time helpers
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: agent/src/sellershield_agent/db.py, agent/src/sellershield_agent/clock.py, agent/src/sellershield_agent/money.py, agent/src/sellershield_agent/timeutil.py, agent/tests/test_db.py, agent/tests/test_money.py, agent/tests/test_timeutil.py, README.md, docs/CHANGELOG.md, docs/FEATURES.md, docs/DECISIONS.md, docs/PITFALLS.md, docs/TASKS.md, docs/STATE.md
 What changed:
 - Implemented `db.py` SQLite engine factory with Section 16 recipe: `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`, `isolation_level=None` on connect, and `BEGIN IMMEDIATE` on begin. Added `write_tx()` and `read_tx()` context managers (with docstring prohibiting transaction holds across awaits/HTTP) and idempotent `init_db()` creating `_meta` table.
@@ -1085,7 +1098,11 @@ Verification run (commands and result summary):
 Follow-ups:
 - Proceed to T0.9 (JWT and JWKS verification).
 
+<<<<<<< HEAD
 ## 2026-11-11 .7 Agent service skeleton
+=======
+## 2026-11-11 T0.7 Agent service skeleton
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: agent/pyproject.toml, agent/.env.example, agent/src/sellershield_agent/__init__.py, agent/src/sellershield_agent/config.py, agent/src/sellershield_agent/logging.py, agent/src/sellershield_agent/middleware.py, agent/src/sellershield_agent/errors.py, agent/src/sellershield_agent/api/__init__.py, agent/src/sellershield_agent/api/health.py, agent/src/sellershield_agent/main.py, agent/tests/__init__.py, agent/tests/conftest.py, agent/tests/test_config.py, agent/tests/test_cors.py, agent/tests/test_errors.py, agent/tests/test_health.py, agent/tests/test_logging.py, agent/tests/test_request_id.py, docs/FEATURES.md, docs/DECISIONS.md, docs/CHANGELOG.md, docs/TASKS.md, docs/STATE.md
 What changed:
 - Initialized `agent/` as a uv package with Python >=3.12, pinned dependencies from 02-agent.md Section 0A, and configured strict tooling (`mypy strict`, `ruff`, `pytest-asyncio`).
@@ -1107,7 +1124,11 @@ Verification run (commands and result summary):
 Follow-ups:
 - Proceed to T0.8 (Database, clock, money and time helpers).
 
+<<<<<<< HEAD
 ## 2026-11-11 .6b Agent OpenAPI contract (milestone M0)
+=======
+## 2026-11-11 T0.6b Agent OpenAPI contract (milestone M0)
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: contracts/openapi-agent.yaml, docs/spec/CONTRACT_COVERAGE.md, scripts/contract_check.py, docs/FEATURES.md, docs/DECISIONS.md, docs/TASKS.md, docs/STATE.md, docs/CHANGELOG.md
 What changed:
 - Authored contracts/openapi-agent.yaml (OpenAPI 3.1) with 48 operations across 8 tags.
@@ -1128,7 +1149,11 @@ Follow-ups:
 - Notify W1 and W2 that contracts/ is frozen (Milestone M0).
 - Proceed to T0.7 (Agent service skeleton).
 
+<<<<<<< HEAD
 ## 2026-11-11 .6a Store OpenAPI contract (milestone M0)
+=======
+## 2026-11-11 T0.6a Store OpenAPI contract (milestone M0)
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: contracts/openapi-store.yaml, docs/spec/CONTRACT_COVERAGE.md, scripts/contract_check.py, docs/FEATURES.md, docs/DECISIONS.md, docs/TASKS.md, docs/STATE.md, docs/CHANGELOG.md
 What changed:
 - Authored contracts/openapi-store.yaml (OpenAPI 3.1) with 49 operations across 8 tags and 7 webhook outbox definitions.
@@ -1146,7 +1171,11 @@ Verification run (commands and result summary):
 Follow-ups:
 - Implement Prompt 6b (TASK T0.6b - Agent OpenAPI contract).
 
+<<<<<<< HEAD
 ## 2026-11-11  Repository skeleton and tooling
+=======
+## 2026-11-11 T0.4 Repository skeleton and tooling
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Files: .gitignore, .gitattributes, .editorconfig, justfile, .env.example, README.md, agent/README.md, store-api/README.md, store-web/README.md, contracts/README.md, scenarios/golden/README.md, scripts/README.md, docs/spec/README.md, docs/TASKS.md, docs/STATE.md, docs/CHANGELOG.md
 What changed:
 - Created .gitignore with protections for .env, sqlite DBs, caches, virtual environments, and node_modules.
@@ -1161,3 +1190,9 @@ Verification run (commands and result summary):
 - `Set-Content -Path .env -Value 'TEST=1' ; git status ; Remove-Item .env`: Verified that .env is ignored and excluded by git status.
 Follow-ups:
 - Human toolchain installation for `just` and `gitleaks` (T0.1).
+<<<<<<< HEAD
+=======
+=======
+(none yet)
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

@@ -70,12 +70,16 @@ def _sanitize_validation_error(err: dict[str, Any]) -> dict[str, Any]:
             cleaned["input"] = "[REDACTED]"
         else:
             raw_input = err["input"]
+<<<<<<< HEAD
             if isinstance(raw_input, bytes):
                 try:
                     cleaned["input"] = raw_input.decode("utf-8", errors="replace")[:100]
                 except Exception:
                     cleaned["input"] = str(raw_input)[:100]
             elif isinstance(raw_input, str) and len(raw_input) > 100:
+=======
+            if isinstance(raw_input, str) and len(raw_input) > 100:
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
                 cleaned["input"] = raw_input[:100] + "... (truncated)"
             else:
                 cleaned["input"] = raw_input
@@ -93,14 +97,20 @@ class AppHTTPException(HTTPException):
         message: str | None = None,
         details: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+<<<<<<< HEAD
         reason: str | None = None,
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     ) -> None:
         detail = message or "Request failed"
         super().__init__(status_code=status_code, detail=detail, headers=headers)
         self.code = code or STATUS_CODE_TO_ERROR_CODE.get(status_code, "internal")
         self.message = detail
         self.details = details or {}
+<<<<<<< HEAD
         self.reason = reason or self.details.get("reason")
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 async def http_exception_handler(

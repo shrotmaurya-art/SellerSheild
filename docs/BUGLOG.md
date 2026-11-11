@@ -12,6 +12,7 @@ Recurrences: 0
 Files touched: path1, path2   <- agents search by file name
 
 Entries (newest first):
+<<<<<<< HEAD
 ## BUG-014 Endpoint readyz un-injected JWKS client causing 16s timeout and outbox race condition   [FIXED]   Date: 2026-11-11   Task: T3.6
 Symptom (what the human saw, exact error text):
 `AssertionError: assert 'sending' == 'failed'` in `test_audit_fail_blocks_mutation_t20_mail_down_and_clears_on_reset` during full suite runs, accompanied by multiple 16.4-second JWKS fetch timeout warnings: `[WinError 10061] No connection could be made because the target machine actively refused it`.
@@ -260,3 +261,6 @@ Do NOT (what must never be reintroduced):
 Do not pass raw urlparse(url).path directly to Path() on Windows without stripping leading slashes for relative SQLite paths.
 Recurrences: 0
 Files touched: agent/src/sellershield_agent/db.py
+=======
+(none yet)
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

@@ -5,6 +5,7 @@ ADR-003 OpenAI-compatible client for all LLM providers: one adapter, config swit
 ADR-004 LLM tools are read and propose only; writes live in the execution layer after a human click.
 ADR-005 uv for Python and just for tasks on Windows (PowerShell shell); no global pip.
 ADR-006 Store is the identity provider (RS256 and JWKS); agent only verifies.
+<<<<<<< HEAD
 ADR-007 No GitHub remote until 11 Nov; temporary private sync remote only if the team needs it.
 ADR-008 Store OpenAPI 3.1 contract design and loophole closures.
 ADR-009 Agent OpenAPI 3.1 contract design and security guardrails.
@@ -43,12 +44,25 @@ ADR-041 Proactive Delay Monitor Architecture, Concurrency Lock, and Deduplicatio
 CHANGE-001 Agent OpenAPI Contract: Optional text and guided chat actions.
 CHANGE-002 Store OpenAPI Contract: client_ref on Return/Refund and AdminOrderDetailResponse.
 CHANGE-003 Agent OpenAPI Contract: Customer approval withdrawal (POST /me/approvals/{proposal_id}/withdraw).
+=======
+<<<<<<< HEAD
+ADR-007 Store OpenAPI 3.1 contract design and loophole closures.
+ADR-008 Agent OpenAPI 3.1 contract design and security guardrails.
+ADR-09 Agent service skeleton, config fail-fast, and redacted logging.
+ADR-010 Database engine safety recipe, clock abstraction, money arithmetic, and IST time utilities.
+ADR-011 JWT RS256 token verification, JWKS caching and resilience, and role-based FastAPI dependencies.
+ADR-012 LLM provider chain, failover, circuit breaker, and safe caching.
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 Entry format:
 ## ADR-0xx Title  Date  Status
 Context / Options considered / Decision / Consequences
 
+<<<<<<< HEAD
 ## ADR-008 Store OpenAPI 3.1 Contract and Loophole Closures  2026-11-11 ccepted
+=======
+## ADR-008 Store OpenAPI 3.1 Contract and Loophole Closures  2026-11-11  Accepted
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Context:
 T0.6a requires freezing the Store API contract for milestone M0 across W1, W2, and A, accounting for all Section 16 strict-review amendments.
 Options considered:
@@ -64,7 +78,11 @@ Option 2 chosen.
 Consequences:
 Contracts pass openapi-spec-validator and scripts/contract_check.py. All three developers build against a single source of truth.
 
+<<<<<<< HEAD
 ## ADR-009 Agent OpenAPI 3.1 Contract and Security Guardrails  2026-11-11 Acepted
+=======
+## ADR-009 Agent OpenAPI 3.1 Contract and Security Guardrails  2026-11-11  Accepted
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 Context:
 T0.6b requires freezing the Agent API contract for milestone M0, implementing chat SSE streams, push notifications, seller approvals, and policy simulation.
 Options considered:
@@ -161,6 +179,7 @@ Option 2 chosen.
 - Loophole closure 5: Prompts and messages are never logged, ensuring customer data and PII never leak into telemetry.
 Consequences:
 12 offline tests pass with respx. Agent check suite reaches 97 passing tests, ruff clean, mypy strict clean. Ready for live human smoke testing.
+<<<<<<< HEAD
 
 ## ADR-014 Test Guard Architecture, Hash Manifest, and Test-Integrity Invariants  2026-11-11  Accepted
 Context:
@@ -672,3 +691,12 @@ All 6 tests in `agent/tests/test_monitor.py` pass cleanly, full suite passes, an
 
 
 
+=======
+=======
+
+
+Entry format:
+## ADR-0xx Title  Date  Status
+Context / Options considered / Decision / Consequences
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

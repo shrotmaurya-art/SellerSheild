@@ -13,7 +13,10 @@ from sellershield_agent.llm.client import LLMResult
 
 class StructuredOutputError(LLMError):
     """Raised when LLM output fails schema validation after retry."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     pass
 
 

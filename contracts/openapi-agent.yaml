@@ -431,6 +431,7 @@ paths:
         '401':
           $ref: '#/components/responses/Error401'
 
+<<<<<<< HEAD
   /me/approvals/{proposal_id}/withdraw:
     post:
       tags: [proposals]
@@ -468,13 +469,19 @@ paths:
         '409':
           $ref: '#/components/responses/Error409'
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
   # =========================================================================
   # SELLER APPROVALS
   # =========================================================================
   /seller/approvals:
     get:
       tags: [seller_approvals]
+<<<<<<< HEAD
       summary: List seller approvals queue with status filter and pagination
+=======
+      summary: List pending seller approvals queue
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
       operationId: list_seller_approvals
       x-required-role: seller
       parameters:
@@ -484,6 +491,7 @@ paths:
           required: false
           schema:
             type: string
+<<<<<<< HEAD
             enum: [pending, approving, approved, rejected, expired, needs_revalidation, withdrawn]
         - name: limit
           in: query
@@ -503,12 +511,21 @@ paths:
       responses:
         '200':
           description: Paginated list of approvals in queue
+=======
+            enum: [pending, approving, approved, rejected]
+      responses:
+        '200':
+          description: List of approvals in queue
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SellerApprovalListResponse'
+<<<<<<< HEAD
         '400':
           $ref: '#/components/responses/Error400'
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         '401':
           $ref: '#/components/responses/Error401'
         '403':
@@ -1660,6 +1677,7 @@ components:
           items:
             type: string
 
+<<<<<<< HEAD
     ChatAction:
       type: object
       additionalProperties: false
@@ -1681,12 +1699,21 @@ components:
       type: object
       additionalProperties: false
       required: [client_msg_id]
+=======
+    ChatMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [text, client_msg_id]
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
       properties:
         text:
           type: string
           maxLength: 1000
+<<<<<<< HEAD
         action:
           $ref: '#/components/schemas/ChatAction'
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         client_msg_id:
           type: string
         evidence_ids:
@@ -1694,9 +1721,12 @@ components:
           maxItems: 3
           items:
             type: string
+<<<<<<< HEAD
       anyOf:
         - required: [text]
         - required: [action]
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     ChatCard:
       type: object
@@ -1980,6 +2010,7 @@ components:
     # -----------------------------------------------------------------------
     # Seller Approvals
     # -----------------------------------------------------------------------
+<<<<<<< HEAD
     WithdrawApprovalResponse:
       type: object
       additionalProperties: false
@@ -1993,6 +2024,8 @@ components:
           type: string
           enum: [withdrawn]
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     SellerApproval:
       type: object
       additionalProperties: false
@@ -2011,12 +2044,16 @@ components:
           type: string
         proposal_id:
           type: string
+<<<<<<< HEAD
         store_id:
           type: string
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         customer_id:
           type: string
         order_id:
           type: string
+<<<<<<< HEAD
         return_id:
           type: string
           nullable: true
@@ -2033,11 +2070,20 @@ components:
           type: string
         policy_version:
           type: string
+=======
+        requested_amount_paise:
+          type: integer
+          minimum: 0
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         reason:
           type: string
         status:
           type: string
+<<<<<<< HEAD
           enum: [pending, approving, approved, rejected, expired, needs_revalidation, withdrawn]
+=======
+          enum: [pending, approving, approved, rejected]
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         expected_version:
           type: integer
         risk_flags:
@@ -2050,12 +2096,15 @@ components:
         created_at:
           type: string
           format: date-time
+<<<<<<< HEAD
         due_at:
           type: string
           format: date-time
         expires_at:
           type: string
           format: date-time
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         decided_at:
           type: string
           format: date-time
@@ -2063,6 +2112,7 @@ components:
         decided_by:
           type: string
           nullable: true
+<<<<<<< HEAD
         decision_reason:
           type: string
           nullable: true
@@ -2161,16 +2211,23 @@ components:
           items:
             type: object
             additionalProperties: true
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     SellerApprovalListResponse:
       type: object
       additionalProperties: false
+<<<<<<< HEAD
       required: [approvals, total, limit, offset]
+=======
+      required: [approvals]
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
       properties:
         approvals:
           type: array
           items:
             $ref: '#/components/schemas/SellerApproval'
+<<<<<<< HEAD
         total:
           type: integer
           minimum: 0
@@ -2180,6 +2237,8 @@ components:
         offset:
           type: integer
           minimum: 0
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     ApprovalDecisionRequest:
       type: object
@@ -2188,6 +2247,7 @@ components:
       properties:
         decision:
           type: string
+<<<<<<< HEAD
           enum: [approve, reject]
         reason:
           type: string
@@ -2196,6 +2256,13 @@ components:
         expected_version:
           type: integer
           minimum: 1
+=======
+          enum: [approved, rejected]
+        reason:
+          type: string
+        expected_version:
+          type: integer
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     # -----------------------------------------------------------------------
     # Seller Operations & Trace

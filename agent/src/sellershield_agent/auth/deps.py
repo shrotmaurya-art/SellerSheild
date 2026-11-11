@@ -2,20 +2,29 @@
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 import uuid
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from typing import Annotated
 
 from fastapi import Depends, Request
 
+<<<<<<< HEAD
 from sellershield_agent.api.ratelimit import ip_auth_failure_limiter
 from sellershield_agent.audit.models import ActorType, AuditEvent, EventType, Outcome
 from sellershield_agent.audit.service import AuditService
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from sellershield_agent.auth.jwks import JWKSClient
 from sellershield_agent.auth.models import Principal, Role
 from sellershield_agent.auth.verify import verify_token
 from sellershield_agent.clock import Clock, SystemClock
 from sellershield_agent.config import get_settings
+<<<<<<< HEAD
 from sellershield_agent.db import get_engine, write_tx
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from sellershield_agent.errors import AppHTTPException
 from sellershield_agent.logging import get_logger
 
@@ -24,6 +33,7 @@ logger = get_logger("sellershield_agent.auth.deps")
 _default_jwks_client: JWKSClient | None = None
 
 
+<<<<<<< HEAD
 def record_auth_denied(
     request: Request | None = None,
     reason: str = "denied",
@@ -94,6 +104,8 @@ def record_auth_denied(
                 raise
 
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 def reset_default_jwks_client() -> None:
     """Reset the singleton JWKS client (primarily for testing)."""
     global _default_jwks_client
@@ -130,6 +142,7 @@ def get_principal(
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> Principal:
     """Extract, validate, and verify the Bearer token from Authorization header."""
+<<<<<<< HEAD
     client_ip = request.client.host if request.client else "127.0.0.1"
     if ip_auth_failure_limiter.is_exceeded(client_ip, limit=20, window_seconds=60.0):
         logger.warning("auth_rate_limited", client_ip=client_ip)
@@ -146,61 +159,91 @@ def get_principal(
         record_auth_denied(
             request, reason="duplicate_authorization_headers", status_code=401, clock=clock
         )
+=======
+    raw_auth_headers = [v for k, v in request.headers.raw if k.lower() == b"authorization"]
+    if len(raw_auth_headers) > 1:
+        logger.warning("auth_failed", reason="duplicate_authorization_headers")
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
+<<<<<<< HEAD
             reason="duplicate_authorization_headers",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     auth_header = request.headers.get("authorization")
     if not auth_header or not auth_header.strip():
         logger.warning("auth_failed", reason="missing_authorization_header")
+<<<<<<< HEAD
         record_auth_denied(
             request, reason="missing_authorization_header", status_code=401, clock=clock
         )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
+<<<<<<< HEAD
             reason="missing_authorization_header",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     try:
         auth_header.encode("ascii")
     except UnicodeEncodeError:
         logger.warning("auth_failed", reason="non_ascii_authorization_header")
+<<<<<<< HEAD
         record_auth_denied(
             request, reason="non_ascii_authorization_header", status_code=401, clock=clock
         )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
+<<<<<<< HEAD
             reason="non_ascii_authorization_header",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
 
     parts = auth_header.strip().split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
         logger.warning("auth_failed", reason="malformed_authorization_header")
+<<<<<<< HEAD
         record_auth_denied(
             request, reason="malformed_authorization_header", status_code=401, clock=clock
         )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
+<<<<<<< HEAD
             reason="malformed_authorization_header",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     token = parts[1].strip()
     if not token:
         logger.warning("auth_failed", reason="empty_bearer_token")
+<<<<<<< HEAD
         record_auth_denied(request, reason="empty_bearer_token", status_code=401, clock=clock)
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
+<<<<<<< HEAD
             reason="empty_bearer_token",
         )
 
@@ -211,12 +254,20 @@ def get_principal(
         record_auth_denied(request, reason=reason, status_code=exc.status_code, clock=clock)
         raise
 
+=======
+        )
+
+    principal = verify_token(token, jwks_client=jwks_client, clock=clock)
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     request.state.principal = principal
     return principal
 
 
 def require_customer(
+<<<<<<< HEAD
     request: Request,
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     principal: Annotated[Principal, Depends(get_principal)],
 ) -> Principal:
     """Require caller to have customer role."""
@@ -227,18 +278,27 @@ def require_customer(
             required="customer",
             actual=principal.role,
         )
+<<<<<<< HEAD
         record_auth_denied(request, reason="role_mismatch", status_code=403, principal=principal)
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=403,
             code="forbidden",
             message="Access forbidden",
+<<<<<<< HEAD
             reason="role_mismatch",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
     return principal
 
 
 def require_seller(
+<<<<<<< HEAD
     request: Request,
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     principal: Annotated[Principal, Depends(get_principal)],
 ) -> Principal:
     """Require caller to have seller_staff or seller_owner role."""
@@ -249,18 +309,27 @@ def require_seller(
             required="seller",
             actual=principal.role,
         )
+<<<<<<< HEAD
         record_auth_denied(request, reason="role_mismatch", status_code=403, principal=principal)
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=403,
             code="forbidden",
             message="Access forbidden",
+<<<<<<< HEAD
             reason="role_mismatch",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
     return principal
 
 
 def require_owner(
+<<<<<<< HEAD
     request: Request,
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     principal: Annotated[Principal, Depends(get_principal)],
 ) -> Principal:
     """Require caller to have seller_owner role."""
@@ -271,12 +340,18 @@ def require_owner(
             required="seller_owner",
             actual=principal.role,
         )
+<<<<<<< HEAD
         record_auth_denied(request, reason="role_mismatch", status_code=403, principal=principal)
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         raise AppHTTPException(
             status_code=403,
             code="forbidden",
             message="Access forbidden",
+<<<<<<< HEAD
             reason="role_mismatch",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
     return principal
 
@@ -289,12 +364,16 @@ class RequireFreshAuth:
 
     def __call__(
         self,
+<<<<<<< HEAD
         request: Request,
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         principal: Annotated[Principal, Depends(get_principal)],
         clock: Annotated[Clock, Depends(get_clock)],
     ) -> Principal:
         if principal.auth_time is None:
             logger.warning("authz_step_up_missing_auth_time", user_id=principal.user_id)
+<<<<<<< HEAD
             record_auth_denied(
                 request,
                 reason="authz_step_up_missing_auth_time",
@@ -302,12 +381,17 @@ class RequireFreshAuth:
                 principal=principal,
                 clock=clock,
             )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             raise AppHTTPException(
                 status_code=401,
                 code="step_up_required",
                 message="Action requires recent authentication within 15 minutes",
                 details={"auth_time_required_seconds": self.max_age_seconds},
+<<<<<<< HEAD
                 reason="authz_step_up_missing_auth_time",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             )
 
         now_ts = int(clock.now().timestamp())
@@ -319,6 +403,7 @@ class RequireFreshAuth:
                 age_seconds=age,
                 max_age_seconds=self.max_age_seconds,
             )
+<<<<<<< HEAD
             record_auth_denied(
                 request,
                 reason="authz_step_up_stale",
@@ -326,12 +411,17 @@ class RequireFreshAuth:
                 principal=principal,
                 clock=clock,
             )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             raise AppHTTPException(
                 status_code=401,
                 code="step_up_required",
                 message="Action requires recent authentication within 15 minutes",
                 details={"auth_time_required_seconds": self.max_age_seconds},
+<<<<<<< HEAD
                 reason="authz_step_up_stale",
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             )
 
         return principal
@@ -340,6 +430,7 @@ class RequireFreshAuth:
 def require_fresh_auth(max_age_seconds: int = 900) -> RequireFreshAuth:
     """Factory returning a RequireFreshAuth dependency callable."""
     return RequireFreshAuth(max_age_seconds=max_age_seconds)
+<<<<<<< HEAD
 
 
 def require_dev_mode(request: Request) -> None:
@@ -352,3 +443,5 @@ def require_dev_mode(request: Request) -> None:
             message="Endpoint not found",
             reason="not_found",
         )
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

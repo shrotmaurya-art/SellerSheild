@@ -17,7 +17,13 @@ SENSITIVE_KEY_PATTERNS = {
     "cookie",
 }
 
+<<<<<<< HEAD
 EMAIL_REGEX = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+=======
+EMAIL_REGEX = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+)
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 def _sanitize_value(val: Any) -> Any:

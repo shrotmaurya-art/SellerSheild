@@ -17,6 +17,7 @@ __pycache__/
 .DS_Store
 *.bundle
 
+<<<<<<< HEAD
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
 
@@ -29,3 +30,5 @@ docs/evidence/*
 !docs/evidence/README.md
 .evidence/
 docs/spec/
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

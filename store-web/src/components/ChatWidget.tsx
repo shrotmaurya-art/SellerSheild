@@ -16,6 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { getAccessToken } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useChatStream } from "../hooks/useChatStream";
 import {
@@ -43,6 +44,7 @@ export function ChatWidget() {
     chips,
     toolStatus,
     sendMessage,
+    addMessage,
     createSession,
     resetSession,
   } = useChatStream();
@@ -320,51 +322,113 @@ export function ChatWidget() {
                       }
 
                       if (cardType === "confirmation") {
+                        const proposalId = p.proposal_id || p.proposalId || "";
+                        const proposalHash = p.proposal_hash || p.proposalHash || "";
+                        const refundPaise =
+                          (typeof p.amounts === "object" && p.amounts !== null
+                            ? (p.amounts.total_paise ?? p.amounts.items_paise)
+                            : null) ??
+                          p.estimatedRefundPaise ??
+                          p.refund_amount_paise ??
+                          0;
+
+                        const confirmationDetails = Array.isArray(p.details)
+                          ? p.details
+                          : [
+                            {
+                              label: "Order ID",
+                              value: p.orderId || p.order_id || "",
+                            },
+                            {
+                              label: "Estimated Refund",
+                              value: `₹${(Number(refundPaise) / 100).toFixed(2)}`,
+                            },
+                            ...(Array.isArray(p.items) && p.items.length > 0
+                              ? [
+                                {
+                                  label: "Items",
+                                  value: p.items
+                                    .map(
+                                      (it: any) =>
+                                        `${it.name || "Item"} (×${it.quantity || it.qty || 1})`,
+                                    )
+                                    .join(", "),
+                                },
+                              ]
+                              : []),
+                          ];
+
                         return (
                           <ConfirmationCard
                             key={idx}
                             title={
                               p.title ||
-                              `Confirm ${p.type === "cancel" ? "Cancellation" : "Return"}`
+                              `Confirm ${p.type === "cancel" || p.proposal_type === "cancel" ? "Cancellation" : "Return"}`
                             }
                             description={
                               p.description ||
                               `Please confirm return for order ${p.orderId || p.order_id || ""}`
                             }
-                            details={
-                              Array.isArray(p.details)
-                                ? p.details
-                                : [
-                                  {
-                                    label: "Order ID",
-                                    value: p.orderId || p.order_id || "",
-                                  },
-                                  {
-                                    label: "Estimated Refund",
-                                    value: `₹${(
-                                      (p.estimatedRefundPaise ||
-                                        p.refund_amount_paise ||
-                                        0) /
-                                      100
-                                    ).toFixed(2)}`,
-                                  },
-                                ]
-                            }
+                            details={confirmationDetails}
                             expiresAt={p.expiresAt || p.expires_at}
-                            onConfirm={() =>
-                              handleChipAction({
-                                label: "Confirm",
-                                action: "confirm",
-                                order_id: p.orderId || p.order_id,
-                              })
-                            }
-                            onCancel={() =>
-                              handleChipAction({
-                                label: "Cancel",
-                                action: "cancel",
-                                order_id: p.orderId || p.order_id,
-                              })
-                            }
+                            onConfirm={async () => {
+                              if (!proposalId) return;
+                              const token = getAccessToken();
+                              const res = await fetch(`/agent/v1/proposals/${proposalId}/confirm`, {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                  "Idempotency-Key": `web-confirm-${proposalId}-${Date.now()}`,
+                                },
+                                body: JSON.stringify({ proposal_hash: proposalHash }),
+                              });
+
+                              if (!res.ok) {
+                                const errData = await res.json().catch(() => ({}));
+                                const errMsg = errData?.error?.message || `Confirmation failed (${res.status})`;
+                                addMessage({
+                                  id: `err-${Date.now()}`,
+                                  sender: "assistant",
+                                  text: `Could not confirm proposal: ${errMsg}`,
+                                  timestamp: new Date(),
+                                });
+                                throw new Error(errMsg);
+                              }
+
+                              const confData = await res.json();
+                              const retId = confData.return_id || "RET-SUCCESS";
+                              addMessage({
+                                id: `conf-asst-${Date.now()}`,
+                                sender: "assistant",
+                                text: `Your return request has been confirmed! **Return ID: ${retId}** has been registered in the store and a confirmation email has been dispatched to your Inbox.`,
+                                timestamp: new Date(),
+                              });
+                            }}
+                            onCancel={async () => {
+                              if (proposalId) {
+                                const token = getAccessToken();
+                                try {
+                                  await fetch(`/agent/v1/proposals/${proposalId}/cancel`, {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                                      "Idempotency-Key": `web-cancel-${proposalId}-${Date.now()}`,
+                                    },
+                                    body: JSON.stringify({}),
+                                  });
+                                } catch {
+                                  // ignore cancel errors
+                                }
+                              }
+                              addMessage({
+                                id: `cancel-asst-${Date.now()}`,
+                                sender: "assistant",
+                                text: `Return proposal for order ${p.orderId || p.order_id || ""} has been cancelled.`,
+                                timestamp: new Date(),
+                              });
+                            }}
                           />
                         );
                       }

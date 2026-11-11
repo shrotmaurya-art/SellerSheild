@@ -6,7 +6,11 @@ the current time as an **aware UTC** datetime.
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 from datetime import UTC, datetime, timedelta
+=======
+from datetime import UTC, datetime
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from typing import Protocol, runtime_checkable
 
 
@@ -46,6 +50,7 @@ class FixedClock:
         _require_aware(dt)
         self._now = dt
 
+<<<<<<< HEAD
     def advance(self, delta: timedelta) -> None:
         """Advance the fixed time by the given timedelta."""
         self.set(self._now + delta)
@@ -108,6 +113,18 @@ class StoreClock:
         if self._frozen_time is not None:
             return self._frozen_time
         return datetime.now(UTC) + timedelta(seconds=self._offset_seconds)
+=======
+
+class StoreClock:
+    """Clock that reads the store's simulated time.
+
+    Wired in Phase 1 when the store HTTP client is available.
+    """
+
+    def now(self) -> datetime:
+        """Not yet wired — raises ``NotImplementedError``."""
+        raise NotImplementedError("wired in Phase 1")
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 # ── internal helper ───────────────────────────────────────────────
@@ -116,3 +133,7 @@ class StoreClock:
 def _require_aware(dt: datetime) -> None:
     if dt.tzinfo is None or dt.utcoffset() is None:
         raise ValueError(f"datetime must be timezone-aware, got naive: {dt!r}")
+<<<<<<< HEAD
+=======
+
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

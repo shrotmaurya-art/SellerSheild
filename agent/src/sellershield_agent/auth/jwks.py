@@ -108,6 +108,7 @@ class JWKSClient:
             last_error=str(last_error) if last_error else "bad_status",
             has_cached_keys=bool(self._keys),
         )
+<<<<<<< HEAD
 
         # In DEV_MODE, fall back to dev_auth server if port 8000 is down
         if (
@@ -130,6 +131,8 @@ class JWKSClient:
             except Exception:
                 pass
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         return False
 
     def get_signing_key(self, kid: str) -> PyJWK:

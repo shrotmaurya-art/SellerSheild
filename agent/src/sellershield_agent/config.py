@@ -3,13 +3,20 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+<<<<<<< HEAD
 from pydantic import SecretStr, ValidationError, field_validator, model_validator
+=======
+from pydantic import SecretStr, ValidationError, field_validator
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ConfigError(ValueError):
     """Raised when configuration validation fails, listing only missing variable names."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     pass
 
 
@@ -29,7 +36,10 @@ class Settings(BaseSettings):
     # Defaults
     DATABASE_URL: str = "sqlite:///data/agent.db"
     DEV_MODE: bool = False
+<<<<<<< HEAD
     STORE_MODE: str = "fixtures"
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     CORS_ORIGINS: list[str] = []
     JWT_ISSUER: str = "nestkart-store"
 
@@ -53,7 +63,10 @@ class Settings(BaseSettings):
     LLM_TIMEOUT_S: int = 12
     LLM_CACHE_MODE: str = "off"
     PROMPT_VERSION: str = "v1"
+<<<<<<< HEAD
     DEV_FAULT_LLM_DOWN: bool = False
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -74,6 +87,7 @@ class Settings(BaseSettings):
             return [str(item).strip() for item in value if str(item).strip()]
         return []
 
+<<<<<<< HEAD
     @model_validator(mode="after")
     def validate_store_mode(self) -> "Settings":
         valid_modes = {"fixtures", "http"}
@@ -81,6 +95,8 @@ class Settings(BaseSettings):
             raise ValueError(f"STORE_MODE must be one of {valid_modes}, got '{self.STORE_MODE}'")
         return self
 
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     @classmethod
     def load_from_env(
         cls,

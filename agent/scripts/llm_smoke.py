@@ -60,7 +60,12 @@ async def main() -> int:
             # Safe reporting: never echo keys or secret tokens
             err_name = type(exc).__name__
             print(
+<<<<<<< HEAD
                 f"  FAILED [provider={provider.name}, model={provider.model}]: {err_name} - {exc}"
+=======
+                f"  FAILED [provider={provider.name}, model={provider.model}]: "
+                f"{err_name} - {exc}"
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             )
         finally:
             await single_chain.aclose()

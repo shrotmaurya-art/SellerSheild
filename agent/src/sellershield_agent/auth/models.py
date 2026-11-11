@@ -24,7 +24,10 @@ class Principal(BaseModel):
     user_id: str
     role: Role
     customer_id: str | None = None
+<<<<<<< HEAD
     store_id: str = "nestkart"
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     scopes: list[str] = Field(default_factory=list)
     auth_time: int | None = None
     jti: str

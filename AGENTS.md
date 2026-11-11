@@ -10,7 +10,10 @@ You are a careful senior engineer on SellerShield AI, an AI customer-support age
 5. Reply with a short plan (files, tests, verification commands) BEFORE editing. If the task says WAIT, stop until the human approves.
 
 ## 1. Hard prohibitions
+<<<<<<< HEAD
 - Git: you may run git status, git diff, git log. You may run git add and git commit only if the task says COMMIT. Never run git push, git remote add, git rebase, git commit --amend, git reset --hard, git clean, git filter-repo, git checkout or git restore on the whole tree, or anything with --force. Never set GIT_AUTHOR_DATE, GIT_COMMITTER_DATE or --date. No GitHub remote exists until 11 Nov; never create one.
+=======
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 - Secrets: never read, print, copy, log or echo .env files, API keys, tokens or passwords. Never write a real secret anywhere (code, tests, docs, prompts, logs). Placeholders only: replace-me.
 - Destructive actions: no Remove-Item -Recurse, rm -rf, del /s, rmdir /s, format, or deleting anything outside the task's folders. If a deletion is needed, list the paths and ask.
 - Dependencies: no global installs, no pip install, no piped installers. Add packages only with uv add (or uv add --dev), and only if docs/DECISIONS.md lists the reason and the human approved.
@@ -56,6 +59,7 @@ Update in the same change: docs/CHANGELOG.md (task id, files, what changed, veri
 The spec or contract is unclear · a frozen file must change · a new dependency seems needed · tests fail 3 times · a command needs approval you are unsure about · the task seems to need a git push, a secret or a destructive action · you notice a security or money-safety problem outside the task (report it; do not silently fix it).
 
 ## 7. Final report format
+<<<<<<< HEAD
 Done or not done · files changed · commands run with real output · tests added · docs updated · risks and follow-ups · suggested next task.
 
 ## 8. Test integrity (binding; overrides any task text)
@@ -176,3 +180,6 @@ If the application cannot be started, explain the limitation and perform whateve
 These instructions apply to every future UI-related task in this workspace, even when I do not explicitly mention the skills.
 
 For tasks unrelated to UI or frontend development, do not unnecessarily invoke these design skills.
+=======
+Done or not done · files changed · commands run with real output · tests added · docs updated · risks and follow-ups · suggested next task.
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

@@ -2,7 +2,15 @@
 KP-01 SQLite: use the BEGIN IMMEDIATE recipe from docs/spec/01-playground.md section 16; never hold a write transaction across await or HTTP.
 KP-02 Browser EventSource cannot send Authorization; streams use fetch-event-source.
 KP-03 Windows needs the tzdata package for zoneinfo; Asia/Kolkata fails without it.
+<<<<<<< HEAD
 KP-04 JWT: allow RS256 only; reject alg none and HS256 signed with the public key; check aud, iss, exp against Clock (not datetime.now); rate limit unknown kid refetches to 30s; keep last good keys during store outages; readyz reports degraded without crashing.
+=======
+<<<<<<< HEAD
+KP-04 JWT: allow RS256 only; reject alg none and HS256 signed with the public key; check aud, iss, exp against Clock (not datetime.now); rate limit unknown kid refetches to 30s; keep last good keys during store outages; readyz reports degraded without crashing.
+=======
+KP-04 JWT: allow RS256 only; reject alg none and HS256 signed with the public key; check aud, iss, exp.
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 KP-05 Money as float causes paise drift; use int paise and largest-remainder allocation.
 KP-06 datetime.now() in domain code breaks the simulated clock; use Clock.
 KP-07 Repo inside OneDrive or Dropbox corrupts SQLite; keep it in C:/dev.
@@ -18,11 +26,16 @@ KP-16 Retried writes without idempotency keys create duplicates.
 KP-17 SSE behind proxies buffers output; send no-cache and X-Accel-Buffering no.
 KP-18 Free-tier LLM quota is small; use the replay cache and per-session budgets.
 KP-19 Antigravity rule files max 12,000 characters; keep AGENTS.md short.
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 KP-20 One agent per folder at a time; parallel agents overwrite each other.
 KP-21 SQLite engine holds Windows file locks; dispose engine before unlinking test DB files.
 KP-22 Windows anyio/TestClient uses loopback socketpair for thread signaling; requires local socket permissions.
 KP-23 Python from __future__ import annotations with nested FastAPI dependency closures causes inspect/get_type_hints fallback to query parameters; declare dependency callables at module scope.
 KP-24 openai AsyncOpenAI client in virtualenv uses httpx2 by default; pass explicit httpx.AsyncClient so respx mocks intercept requests during testing.
+<<<<<<< HEAD
 KP-22 Agents weaken tests through fixtures, conftest and pytest options; frozen files and the guard prevent it.
 KP-23 Customer-facing rule text must never mention limits, thresholds, risk, scores, staff or owner.
 KP-24 STORE_MODE=fixtures must never run outside DEV_MODE; the demo must use the real HTTP store.
@@ -51,3 +64,8 @@ KP-46 Seller approval admin snapshot parity and privilege check ordering: `store
 KP-47 Webhook fail-closed secret, raw header smuggling, namespace isolation, lazy StoreClient resolution, and async refund failure transitions: Always reject empty/unset `WEBHOOK_SECRET` with generic `401` even when `DEV_MODE=true`, count raw header occurrences via `request.headers.raw` so duplicated `X-Store-Signature`/`X-Store-Timestamp`/`X-Event-Id` headers are rejected before comma-merging, and partition `webhook_resource_versions` by `(resource_type, resource_id)` so `return.*` and `refund.*` version streams cannot mask each other. Resolve `StoreClient` lazily only when `return.updated=inspected_ok` dispatches a release (avoiding HTTP/JWKS setup cost during 200-event audit bursts), allow `ProposalStatus.succeeded -> ProposalStatus.failed` with monotonic `refund_status` regression guards so async `refund.updated=failed` gateway failures settle truthfully, and emit static customer `client_events` without reflecting store `failure_reason` strings.
 KP-48 Audit single-writer enforcement, Windows sandbox asyncio loopback IPC, trace PII scrubbing, and presentation HTML escaping: Enforce that all public table mutations on `executions`, `proposals`, `approvals`, and `audit_events` route through `domain.state.transition()`, `AuditService.append()`, or `execution/db_ops.py` via AST check `_check_single_writer_ast()`. Note that on Windows standard sandbox mode, Python's `asyncio.run` blocks indefinitely when creating loopback socketpairs unless unsandboxed (`BypassSandbox: true`). `sanitize_details` is for database audit row storage (max 500 chars, raises on non-serializable objects, redacts `[REDACTED]` tokens and replaces `authorization` references) and must NOT HTML-escape; HTML escaping (`html.escape`) and regex PII scrubbing (phone numbers without matching ISO dates) belong strictly at presentation time in `sanitize_trace_text`/`sanitize_trace_data`. Additionally, decision traces must order timeline events strictly by canonical stage order (`STAGE_ORDER`) and isolate cross-customer objects upon auth denials to prevent IDOR leaks.
 KP-49 Financial ledger oracle independent assertion, schema column alignment, and race test concurrency: The red-team financial ledger oracle (`LedgerOracle` in `tests/redteam/ledger.py`) must recompute all order financial balances directly from store fixtures (`orders`, `refunds`, `returns`) and independently verify the audit event hash chain, completely decoupled from the production execution layer. In test fixture setups, ensure `approvals` table insertions do not supply non-existent columns (`customer_id`, `customer_reason`), as customer reasons are stored exclusively within `proposals.payload_json["reason_text"]`. Furthermore, when testing multi-threaded races on Windows with Starlette `TestClient`, run with `BypassSandbox: true` to avoid socketpair deadlocks, and ensure `create_active_proposal` uses `OrderItemInput(qty=...)` with Pydantic V2 `extra="forbid"` compliance.
+=======
+=======
+KP-20 One agent per folder at a time; parallel agents overwrite each other.
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
+>>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
