@@ -73,7 +73,3 @@ def is_within_window(
 def _require_aware(dt: datetime) -> None:
     if dt.tzinfo is None or dt.utcoffset() is None:
         raise ValueError(f"datetime must be timezone-aware, got naive: {dt!r}")
-<<<<<<< HEAD
-=======
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

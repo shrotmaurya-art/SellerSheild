@@ -10,6 +10,52 @@ Known limits:
 Do not change because:
 Related: BUG ids, ADR ids, spec sections
 
+## F-A43 demo_check: The Demo Beats as One Command   [done]
+What it does:
+One-command verification proving all four three-minute demo beats work end-to-end, in fixture mode and against the real HTTP store, asserting state after each beat and cross-run repeatability with identical state counts.
+How it works (flow and key files):
+- `scripts/demo_check.py`: CLI tool supporting `--mode fixtures|http`, `--llm replay|live|off`, and `--runs N` (default 2).
+  - Resets demo state before each run (fixtures: write-capable fixture store with policy v3 and clean audit chain; http: store and agent demo resets, credentials strictly from environment variables).
+  - Beat B1: C001 asks about ORD-1048; verifies order facts and tool_call audit event.
+  - Beat B2: C001 reports ORD-1042 cookware defective; verifies confirmation card for 120,000 paise (state unmutated before click), customer confirm yields pending approval, seller views approval with 120,000 paise, policy v3 and rule table, seller approves, return advances to `inspected_ok`, refund released and completed exactly once, and customer client event exists.
+  - Beat B3: C002 asks for ORD-1042 (uniform 404 not found without PII leakage); injection customer sends prompt injection (no state change, `injection_flag` audit event recorded, denial visible in seller audit list).
+  - Beat B4: Proactive delay monitor creates exactly one notice (second run still one); damaged-item message creates case with deterministic brief.
+  - Assertions: verifies state counts (returns, approvals, refunds, cases, notices) across runs are identical.
+  - Output: one line per beat with PASS or FAIL, time, and request ID; exit code 0 on success. Never prints tokens or secrets.
+- `justfile`: `demo-check:` recipe running `cd agent; uv run python ../scripts/demo_check.py --mode fixtures --llm off`.
+- `agent/tests/test_demo_check.py`: 5 tests verifying beats pass, broken expectations fail cleanly, runs produce identical state, missing http env vars refuse execution, and zero tokens are printed.
+Invariants that must stay true:
+- No tokens, passwords, keys, or Bearer headers ever appear in output.
+- All mutations occur only after customer confirm or seller approval.
+- Every run resets cleanly and ends with identical state counts.
+Tests (paths):
+- `agent/tests/test_demo_check.py` (5 tests)
+Known limits:
+- `--mode http` requires live store and agent services running with environment credentials configured.
+Related: docs/spec/02-agent.md Section 17, finding 26, scripts/flow_demo.py.
+
+## F-A44 Security Minimum: Route Sweep, DEV Gating, Log Redaction   [done]
+What it does:
+Enforces dynamic route authorization sweep, strict production/DEV mode gating, and comprehensive redaction of credentials, tokens, and PII from logs, decision traces, and audit event details.
+How it works (flow and key files):
+- `agent/tests/security/test_route_sweep.py`: Dynamic OpenAPI path sweeper probing every endpoint for missing authentication (401), customer token on seller routes (403), expired/wrong-aud tokens (401), uniform 404 response shape across ID path parameters (preventing enumeration/IDOR), 1 MB body payload limit (413), and chat text length cap (422 for >1,000 chars).
+- `agent/tests/security/test_dev_gating.py`: Asserts `DEV_MODE=false` disables all `/v1/dev/*` and `/dev/*` routes (404), completely turns off FastAPI `/docs`, `/redoc`, and `/openapi.json` routes, ensures zero debug routes exist, and guarantees `STORE_MODE=fixtures` refuses to start (RuntimeError, KP-24).
+- `agent/tests/security/test_log_redaction.py`: Runs full SC-04 workflow with log capture set to `DEBUG`. Asserts zero JWT strings (`eyJ...`), API key tokens (Google/Groq style), `Bearer` tokens, email addresses, or phone numbers in logs, trace fields, or audit rows.
+- `agent/src/sellershield_agent/logging.py` & `agent/src/sellershield_agent/audit/sanitize.py`: Implements regex-based redaction filters attached to all root and structlog handlers, and redacts sensitive patterns in audit details and trace steps.
+Invariants that must stay true:
+- No unauthenticated or customer-role request can reach seller endpoints or dev endpoints.
+- Path parameters for unknown and cross-customer entities must return indistinguishable 404 status and error envelopes.
+- No secrets, tokens, or PII ever appear in logs, trace strings, or audit event details.
+- `STORE_MODE=fixtures` must never start in production (`DEV_MODE=false`).
+Tests (paths):
+- `agent/tests/security/test_route_sweep.py` (6 tests)
+- `agent/tests/security/test_dev_gating.py` (4 tests)
+- `agent/tests/security/test_log_redaction.py` (1 test)
+Known limits:
+- Full OpenAPI sweep requires resetting the per-IP authentication failure rate limiter (`ip_auth_failure_limiter`) between probes to prevent false-positive 429 rate limits.
+Related: docs/spec/02-agent.md Section 13, KP-24, KP-32.
+
+
 <<<<<<< HEAD
 ## F-A36 Phase 3 Red-Team and Gate G3 Acceptance Suite   [done]
 What it does:

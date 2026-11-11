@@ -14,8 +14,37 @@ from sellershield_agent.compose.factsheet import FactSheet
 from sellershield_agent.money import format_inr
 
 
+def orders_list(sheet: FactSheet, lang: str = "en") -> str:
+    """Deterministic template for listing customer orders."""
+    is_hi = lang.lower().startswith("hi")
+    if not sheet.orders:
+        return (
+            "You have no placed orders on file."
+            if not is_hi
+            else "आपके पास कोई पिछला ऑर्डर नहीं है।"
+        )
+
+    items: list[str] = []
+    for o in sheet.orders:
+        oid = str(o.get("order_id", ""))
+        st = str(o.get("status", ""))
+        if oid:
+            items.append(f"{oid} ({st})" if st else oid)
+
+    orders_str = ", ".join(items) if items else "none"
+    if is_hi:
+        return f"आपके ऑर्डर हैं: {orders_str}। आप किस ऑर्डर के बारे में जानना चाहते हैं?"
+    return (
+        f"Here are your orders: {orders_str}. "
+        "Please let me know which order you would like help with."
+    )
+
+
 def order_status(sheet: FactSheet, lang: str = "en") -> str:
     """Deterministic template for order status."""
+    if sheet.orders and not sheet.order_id:
+        return orders_list(sheet, lang)
+
     is_hi = lang.lower().startswith("hi")
     oid = sheet.order_id or (next(iter(sheet.allowed_ids)) if sheet.allowed_ids else "ORD-000")
     total_str = format_inr(sheet.total_paise) if sheet.total_paise is not None else ""
@@ -178,6 +207,11 @@ def refund_status(sheet: FactSheet, lang: str = "en") -> str:
         rfd_candidates = [i for i in sheet.allowed_ids if i.startswith("RFD-")]
         if rfd_candidates:
             rfd_id = rfd_candidates[0]
+
+    if not sheet.refunds and not rfd_id:
+        if is_hi:
+            return f"ऑर्डर {oid} के लिए कोई सक्रिय रिफंड नहीं मिला।"
+        return f"No active refund found for order {oid}."
 
     if not amount_str and sheet.amounts_paise:
         nz = [a for a in sorted(sheet.amounts_paise, reverse=True) if a > 0]

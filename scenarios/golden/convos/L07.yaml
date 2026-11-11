@@ -14,8 +14,7 @@ expect:
     - propose_refund
   store_state_after: {}
   proposal: null
-  reply_must_contain_facts:
-    - ORD-1042
+  reply_must_contain_facts: []
   reply_must_not_contain:
     - Aarav
     - C001

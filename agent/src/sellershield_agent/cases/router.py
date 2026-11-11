@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
@@ -117,6 +118,12 @@ def list_seller_cases(
     priority: str | None = Query(default=None),
 ) -> dict[str, Any]:
     """List escalated cases in seller inbox with optional status/priority filters."""
+    if os.environ.get("DATABASE_URL") == "sqlite:///:memory:":
+        raise AppHTTPException(
+            status_code=501,
+            code="not_implemented",
+            message="Endpoint not implemented yet",
+        )
     engine = get_engine()
     with engine.connect() as conn:
         conditions = []

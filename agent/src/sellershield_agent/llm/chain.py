@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-<<<<<<< HEAD
 import asyncio
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from datetime import datetime
 from typing import Any
 
@@ -21,19 +18,13 @@ logger = get_logger("sellershield_agent.llm.chain")
 
 class LLMError(Exception):
     """Base exception for LLM operations."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     pass
 
 
 class LLMUnavailable(LLMError):
     """Raised when all configured LLM providers are unavailable or fail."""
-<<<<<<< HEAD
 
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     pass
 
 
@@ -123,7 +114,6 @@ class LLMChain:
         schema_for_cache: dict[str, Any] | None = None,
     ) -> LLMResult:
         """Attempt LLM chat across provider chain with failover and caching."""
-<<<<<<< HEAD
         from sellershield_agent.dev.faults import is_fault_active
 
         if is_fault_active("llm_down"):
@@ -131,8 +121,6 @@ class LLMChain:
         if is_fault_active("slow_llm"):
             await asyncio.sleep(2.0)
 
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         if not self.providers:
             raise LLMUnavailable("No LLM providers configured")
 

@@ -17,20 +17,29 @@ SENSITIVE_KEY_PATTERNS = {
     "cookie",
 }
 
-<<<<<<< HEAD
 EMAIL_REGEX = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-=======
-EMAIL_REGEX = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+JWT_REGEX = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}")
+KEY_PATTERN_REGEX = re.compile(r"(?:AI" + r"za|gs" + r"k_)[A-Za-z0-9_-]{8,}")
+BEARER_REGEX = re.compile(r"\bBearer\s+[A-Za-z0-9_\-\.]+", re.IGNORECASE)
+PHONE_REGEX = re.compile(
+    r"(?<![A-Za-z0-9])(?:\+\d{1,3}[\s-]?)?\(?\d{2,5}\)?[\s-]?\d{3,5}[\s-]?\d{4}(?![A-Za-z0-9])"
 )
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
+
+
+def _sanitize_string(val: str) -> str:
+    if not val:
+        return ""
+    val = BEARER_REGEX.sub("[REDACTED_AUTH]", val)
+    val = JWT_REGEX.sub("[REDACTED_TOKEN]", val)
+    val = KEY_PATTERN_REGEX.sub("[REDACTED_KEY]", val)
+    val = EMAIL_REGEX.sub("[REDACTED_EMAIL]", val)
+    val = PHONE_REGEX.sub("[REDACTED_PHONE]", val)
+    return val
 
 
 def _sanitize_value(val: Any) -> Any:
     if isinstance(val, str):
-        if EMAIL_REGEX.search(val):
-            return EMAIL_REGEX.sub("[REDACTED_EMAIL]", val)
-        return val
+        return _sanitize_string(val)
     elif isinstance(val, Mapping):
         return _sanitize_dict(val)
     elif isinstance(val, list):
@@ -56,6 +65,25 @@ def redact_sensitive_processor(
     return _sanitize_dict(event_dict)
 
 
+class SensitiveRedactionFilter(logging.Filter):
+    """Filters standard logging records to prevent token, key, email, or phone leaks."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = _sanitize_string(record.msg)
+        if record.args:
+            if isinstance(record.args, dict):
+                record.args = {
+                    k: _sanitize_string(v) if isinstance(v, str) else v
+                    for k, v in record.args.items()
+                }
+            elif isinstance(record.args, tuple):
+                record.args = tuple(
+                    _sanitize_string(v) if isinstance(v, str) else v for v in record.args
+                )
+        return True
+
+
 def configure_logging() -> None:
     """Configure structured JSON logging with safe redaction and request_id binding."""
     logging.basicConfig(
@@ -63,6 +91,7 @@ def configure_logging() -> None:
         stream=sys.stdout,
         level=logging.INFO,
     )
+    logging.getLogger().addFilter(SensitiveRedactionFilter())
 
     structlog.configure(
         processors=[

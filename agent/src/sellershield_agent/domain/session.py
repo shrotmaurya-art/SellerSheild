@@ -118,7 +118,7 @@ class ChatMessageInput(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    text: str | None = None
+    text: str | None = Field(default=None, max_length=1000)
     action: ChatAction | None = None
     client_msg_id: str
     evidence_ids: list[str] | None = None

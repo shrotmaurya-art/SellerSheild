@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Application factory and lifecycle for SellerShield AI Agent."""
 
 from __future__ import annotations
@@ -34,21 +33,11 @@ from sellershield_agent.events.router import router as events_router
 from sellershield_agent.execution.reconcile import reconcile_once
 from sellershield_agent.logging import configure_logging
 from sellershield_agent.memory.router import router as memory_router
-=======
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from sellershield_agent.api.health import router as health_router
-from sellershield_agent.config import get_settings
-from sellershield_agent.errors import register_error_handlers
-from sellershield_agent.logging import configure_logging
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from sellershield_agent.middleware import (
     AccessLogMiddleware,
     BodyLimitMiddleware,
     RequestIDMiddleware,
 )
-<<<<<<< HEAD
 from sellershield_agent.monitor.router import router as monitor_router
 from sellershield_agent.outbox.router import router as outbox_router
 from sellershield_agent.overview.router import router as overview_router
@@ -163,17 +152,16 @@ class SafeOverrides(dict[Any, Any]):
             except Exception:
                 pass
         super().__setitem__(k, v)
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 def create_app() -> FastAPI:
     """Application factory for the SellerShield Agent service."""
-<<<<<<< HEAD
     configure_logging()
     settings = get_settings()
 
-    if not settings.DEV_MODE and os.environ.get("STORE_MODE") == "fixtures":
+    if not settings.DEV_MODE and (
+        settings.STORE_MODE == "fixtures" or os.environ.get("STORE_MODE") == "fixtures"
+    ):
         raise RuntimeError("STORE_MODE=fixtures is prohibited outside DEV_MODE (KP-24)")
 
     _logger.info(
@@ -182,22 +170,12 @@ def create_app() -> FastAPI:
         store_mode=settings.STORE_MODE,
     )
 
-=======
-    # Initialize structured JSON logging
-    configure_logging()
-
-    # Load configuration
-    settings = get_settings()
-
-    # Create FastAPI app with docs restricted to DEV_MODE
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     app = FastAPI(
         title="SellerShield AI Agent",
         version="0.1.0",
         docs_url="/docs" if settings.DEV_MODE else None,
         redoc_url="/redoc" if settings.DEV_MODE else None,
         openapi_url="/openapi.json" if settings.DEV_MODE else None,
-<<<<<<< HEAD
         lifespan=_lifespan,
     )
     app.dependency_overrides = SafeOverrides()
@@ -236,26 +214,10 @@ def create_app() -> FastAPI:
     app.include_router(monitor_router, prefix="/v1")
     app.include_router(monitor_router)
 
-=======
-    )
-
-    # Register standard error envelope handlers
-    register_error_handlers(app)
-
-    # Wire routers
-    app.include_router(health_router)
-
-    # Register middlewares (executed in reverse order of addition)
-    # Order of execution: CORS (if enabled) -> RequestID -> BodyLimit -> AccessLog -> App
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     app.add_middleware(AccessLogMiddleware)
     app.add_middleware(BodyLimitMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
-<<<<<<< HEAD
-=======
-    # CORS configuration (off by default; enabled only if CORS_ORIGINS is specified)
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     if settings.CORS_ORIGINS:
         app.add_middleware(
             CORSMiddleware,
@@ -273,7 +235,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("sellershield_agent.main:create_app", factory=True, port=8001, reload=True)
-<<<<<<< HEAD
-=======
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

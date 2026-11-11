@@ -110,7 +110,6 @@ class BodyLimitMiddleware:
         headers = dict(scope.get("headers", []))
         req_id_raw = headers.get(b"x-request-id", b"")
         req_id = req_id_raw.decode("latin1") if req_id_raw else f"req-{uuid.uuid4().hex[:16]}"
-<<<<<<< HEAD
         payload = orjson.dumps(
             {
                 "error": {
@@ -138,26 +137,3 @@ class BodyLimitMiddleware:
                 "body": payload,
             }
         )
-=======
-        payload = orjson.dumps({
-            "error": {
-                "code": "limit_exceeded",
-                "message": "Request body exceeds maximum allowed size (1 MB)",
-                "request_id": req_id,
-                "details": {"max_bytes": self.max_bytes},
-            }
-        })
-        await send({
-            "type": "http.response.start",
-            "status": 413,
-            "headers": [
-                (b"content-type", b"application/json"),
-                (b"content-length", str(len(payload)).encode("latin1")),
-                (b"x-request-id", req_id.encode("latin1")),
-            ],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": payload,
-        })
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

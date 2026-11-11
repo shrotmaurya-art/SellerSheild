@@ -48,6 +48,7 @@ class FactSheet(BaseModel):
     items: tuple[dict[str, Any], ...] = ()
     returns: tuple[dict[str, Any], ...] = ()
     refunds: tuple[dict[str, Any], ...] = ()
+    orders: tuple[dict[str, Any], ...] = ()
     policy_summary_data: dict[str, Any] = Field(default_factory=dict)
     proposal_id: str | None = None
     proposal_total_paise: int | None = None
@@ -143,6 +144,7 @@ def build_factsheet(
     items_list: list[dict[str, Any]] = []
     returns_list: list[dict[str, Any]] = []
     refunds_list: list[dict[str, Any]] = []
+    orders_list: list[dict[str, Any]] = []
     policy_summary_data: dict[str, Any] = {}
     proposal_id: str | None = None
     proposal_total_paise: int | None = None
@@ -225,6 +227,25 @@ def build_factsheet(
                     elif rfd_status == "reserved":
                         supported_claims.add("created")
 
+        if "orders" in data and isinstance(data["orders"], list):
+            for o in data["orders"]:
+                if isinstance(o, dict):
+                    orders_list.append(o)
+                    _extract_ids_recursive(o, allowed_ids)
+                    _extract_amounts_recursive(o, amounts_paise)
+                    _extract_dates_recursive(o, dates)
+                    o_status = o.get("status")
+                    if isinstance(o_status, str):
+                        if o_status in ("shipped", "in_transit", "out_for_delivery"):
+                            supported_claims.add("shipped")
+                            supported_claims.add("dispatched")
+                        elif o_status == "delivered":
+                            supported_claims.add("delivered")
+                            supported_claims.add("shipped")
+                            supported_claims.add("dispatched")
+                        elif o_status == "cancelled":
+                            supported_claims.add("cancelled")
+
         if "rule_results" in data and isinstance(data["rule_results"], list):
             for rr in data["rule_results"]:
                 if isinstance(rr, dict) and rr.get("customer_text"):
@@ -293,6 +314,7 @@ def build_factsheet(
         items=tuple(items_list),
         returns=tuple(returns_list),
         refunds=tuple(refunds_list),
+        orders=tuple(orders_list),
         policy_summary_data=policy_summary_data,
         proposal_id=proposal_id,
         proposal_total_paise=proposal_total_paise,

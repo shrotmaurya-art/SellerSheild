@@ -7,12 +7,8 @@ writers coexist.  See docs/spec/01-playground.md section 16.
 
 from __future__ import annotations
 
-<<<<<<< HEAD
 import threading
 from collections.abc import Callable, Generator
-=======
-from collections.abc import Generator
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -64,7 +60,6 @@ def create_engine_from_url(url: str) -> Engine:
         # On Windows urlparse("sqlite:///C:/foo/bar.db").path == "/C:/foo/bar.db"
         if len(db_path_str) >= 3 and db_path_str[0] == "/" and db_path_str[2] == ":":
             db_path_str = db_path_str[1:]
-<<<<<<< HEAD
         elif db_path_str.startswith("/") and not url.startswith("sqlite:////"):
             db_path_str = db_path_str.lstrip("/")
         db_file = Path(db_path_str)
@@ -80,14 +75,6 @@ def create_engine_from_url(url: str) -> Engine:
     engine = create_engine(
         url,
         **kwargs,
-=======
-        db_file = Path(db_path_str)
-        db_file.parent.mkdir(parents=True, exist_ok=True)
-
-    engine = create_engine(
-        url,
-        connect_args={"check_same_thread": False},
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     )
 
     @event.listens_for(engine, "connect")
@@ -102,7 +89,6 @@ def create_engine_from_url(url: str) -> Engine:
 
     @event.listens_for(engine, "begin")
     def _on_begin(conn: Connection) -> None:
-<<<<<<< HEAD
         try:
             conn.exec_driver_sql("BEGIN IMMEDIATE")
         except Exception:
@@ -125,36 +111,26 @@ def create_engine_from_url(url: str) -> Engine:
         ):
             return text(clause.text.replace(":true", "\\:true")), multiparams, params
         return clause, multiparams, params
-=======
-        conn.exec_driver_sql("BEGIN IMMEDIATE")
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     return engine
 
 
 # ── transaction helpers ───────────────────────────────────────────
 
-<<<<<<< HEAD
 _db_write_lock = threading.Lock()
 
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 @contextmanager
 def write_tx(engine: Engine) -> Generator[Connection, None, None]:
     """Context manager for a write transaction.
 
     Commits on clean exit, rolls back on exception.
-<<<<<<< HEAD
     Serializes concurrent thread writes to prevent SQLite lock races.
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     **Never hold this across an await or an HTTP call.**
     Long-held write transactions block all other writers because
     BEGIN IMMEDIATE acquires an exclusive lock.  See KP-01.
     """
-<<<<<<< HEAD
     after_commit: list[Callable[[], None]] = []
     with _db_write_lock:
         with engine.connect() as conn:
@@ -171,15 +147,6 @@ def write_tx(engine: Engine) -> Generator[Connection, None, None]:
     # Dispatch registered post-commit callbacks after WAL commit & lock release
     for cb in after_commit:
         cb()
-=======
-    with engine.connect() as conn:
-        try:
-            yield conn
-            conn.commit()
-        except BaseException:
-            conn.rollback()
-            raise
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 @contextmanager
@@ -189,26 +156,17 @@ def read_tx(engine: Engine) -> Generator[Connection, None, None]:
     Uses BEGIN IMMEDIATE at demo scale (per spec §16).
     Rolls back at exit — no commit needed for reads.
     """
-<<<<<<< HEAD
     with _db_write_lock:
         with engine.connect() as conn:
             try:
                 yield conn
             finally:
                 conn.rollback()
-=======
-    with engine.connect() as conn:
-        try:
-            yield conn
-        finally:
-            conn.rollback()
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 # ── schema initialisation ────────────────────────────────────────
 
 
-<<<<<<< HEAD
 def _ensure_execution_columns(conn: Connection) -> None:
     """Ensure T2.5 reconciler columns exist on pre-existing executions tables."""
     cols = {str(row[1]) for row in conn.execute(text("PRAGMA table_info(executions)")).fetchall()}
@@ -288,15 +246,11 @@ def seed_policies(conn: Connection) -> None:
 
 
 def init_db(engine: Engine, metadata: MetaData | None = None) -> None:
-=======
-def init_db(engine: Engine, metadata: MetaData) -> None:
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     """Create all tables and seed the ``_meta`` row (idempotent).
 
     Safe to call multiple times — uses IF NOT EXISTS for tables and
     checks for an existing seed row before inserting.
     """
-<<<<<<< HEAD
     import sellershield_agent.audit.models  # noqa: F401
     import sellershield_agent.domain.session  # noqa: F401
     import sellershield_agent.domain.state  # noqa: F401
@@ -355,16 +309,3 @@ def reset_engine() -> None:
         user_message_limiter.reset()
     except ImportError:
         pass
-=======
-    metadata.create_all(engine)
-
-    with write_tx(engine) as conn:
-        count = conn.execute(
-            text("SELECT count(*) FROM _meta")
-        ).scalar()
-        if count == 0:
-            conn.execute(
-                _meta_table.insert().values(schema_version=1)
-            )
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

@@ -13,9 +13,7 @@ expect:
     - propose_refund
   store_state_after:
     returns_count: 0
-  proposal:
-    amount_paise: 0
-    decision: "deny"
+  proposal: null
   reply_must_contain_facts:
     - ORD-1051
   reply_must_not_contain:

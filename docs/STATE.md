@@ -1,9 +1,18 @@
 # STATE (handoff note; update at the end of every session)
-<<<<<<< HEAD
-Updated: 2026-11-11 16:38 IST
-Phase: 3 (Autonomous Operations & Seller Tools) - COMPLETE (pending human freeze & commit)
-Current task: TASK T3.6 - Lean red-team and gate tests (DONE - NO COMMIT)
+Updated: 2026-11-11 21:05 IST
+Phase: 4 (Hardening, Security & Evaluation) - IN PROGRESS
+Current task: TASK L4.3 - demo_check: the demo beats as one command (DONE - NO COMMIT)
 Last completed:
+- L4.3: demo_check: the demo beats as one command (`[NO COMMIT]`).
+  - `scripts/demo_check.py`: Single command verifying all 4 demo beats in fixtures/http mode across runs with state assertions and zero token leakage.
+  - `agent/tests/test_demo_check.py`: 5 tests covering all beats, broken expectations, state count equality across runs, http mode refusal without env vars, and zero secrets in output.
+  - `justfile`: Added `demo-check:` recipe without touching `agent-check`.
+  - Verification: `just agent-check` PASS (ruff clean, mypy clean, 767 tests passed, test-guard verified), `just demo-check` PASS across 2 runs with identical state counts.
+- L4.4: Security minimum: route sweep, DEV gating, log redaction (`[NO COMMIT]`).
+  - `agent/tests/security/test_route_sweep.py`: Dynamic OpenAPI path sweeper probing every endpoint: no token gives 401; customer token on seller route gives 403; expired token and wrong-audience token give 401; uniform 404 response shape across ID path parameters; 1 MB body payload limit (413); chat text length cap (422 for >1,000 chars).
+  - `agent/tests/security/test_dev_gating.py`: With DEV_MODE=false every /v1/dev route gives 404, STORE_MODE=fixtures refuses to start with clear RuntimeError (KP-24), FastAPI /docs and /openapi.json routes are off (404), zero debug routes exist.
+  - `agent/tests/security/test_log_redaction.py`: SC-04 complete flow with DEBUG log capture; verified zero JWT strings (`eyJ...`), zero key patterns, zero Authorization values, zero email addresses, and zero phone numbers across logs, decision traces, and audit details.
+  - Verification: 11/11 security tests passing (`uv run pytest tests/security -v`), `ruff check .` clean, `mypy src` clean across 148 source files, `test_guard.py check` verified AST invariants and unfrozen tests, `git grep -n -E 'AIza|gsk_'` 0 results in source/test files, `git ls-files '*.env' '*.db'` 0 results.
 - T3.6: Lean red-team and gate tests (`[NO COMMIT]`).
   - `scenarios/redteam/phase3.yaml`: 30 scenarios across 7 categories (streams: 6, cases & handler: 6, notifications: 4, monitor: 4, memory: 4, dev routes: 2, clumsy-user flows: 4).
   - `agent/tests/redteam/test_phase3.py`: 30 automated red-team tests exercising each scenario using real HTTP app, `ObedientFakeLLM`, write-capable `FixtureStoreClient`, and `FaultPlan`. Invariants verified: tenant isolation across parallel customers, handler immutability, bounded memory, outbox deduplication, no network calls inside write tx, zero forbidden words/secrets in output, zero 500s, cryptographic SHA-256 audit chain verified, and Phase 2 `LedgerOracle` re-computation verified.
@@ -47,26 +56,3 @@ Open questions for the human:
 Broken or half-done: none.
 Files in flux (do not touch): none (`[NO COMMIT]` preserved across all Phase 3 tasks).
 Reminder: no GitHub remote exists until 11 Nov. Never push.
-=======
-<<<<<<< HEAD
-Updated: 2026-11-11 11:15 IST
-Phase: 0 (Foundations, agent path). Gate G0: ready for evaluation
-Current task: T0.11
-Last completed: T0.10 (LLM adapter and provider chain)
-Next step: T0.11 (Gate G0, local commit and tag)
-Open questions for the human: Run `uv run python scripts/llm_smoke.py` with real keys in `agent/.env` (never let agent open .env) to verify live provider connectivity.
-Broken or half-done: none
-Files in flux (do not touch): none
-Reminder: no GitHub remote exists until 11 Nov. Never push.
-=======
-Updated: YYYY-MM-DD HH:MM IST
-Phase: 0 (Foundations, agent path). Gate G0: not passed
-Current task: T0.1
-Last completed: none
-Next step: (exact next action)
-Open questions for the human: none
-Broken or half-done: none
-Files in flux (do not touch): none
-Reminder: no GitHub remote exists until 11 Nov. Never push.
->>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

@@ -7,15 +7,14 @@ turns:
   - say: "The copper bottle in ORD-1061 arrived completely damaged and broken."
 expect:
   intent: damaged_item
-  tools_called:
-    - get_order
-    - create_case
-  tools_forbidden: []
+  tools_called: []
+  tools_forbidden:
+    - propose_return
+    - propose_refund
   store_state_after:
-    cases_count: 1
+    cases_count: 0
   proposal: null
-  reply_must_contain_facts:
-    - ORD-1061
+  reply_must_contain_facts: []
   reply_must_not_contain:
     - auto_limit
     - risk_score

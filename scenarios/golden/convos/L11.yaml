@@ -5,13 +5,12 @@ clock: "2026-11-08T12:00:00+05:30"
 safety_critical: false
 turns:
   - tap:
-      name: return_order
+      name: start_return
       order_id: ORD-2032
-      item_id: ITEM-2032-1
-      reason_code: changed_mind
 expect:
   intent: return_request
   tools_called:
+    - get_order
     - propose_return
   tools_forbidden: []
   store_state_after: {}

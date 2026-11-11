@@ -182,6 +182,8 @@ ORDER_STATUS_PHRASES = [
     r"\blayte\b",
     r"\bordr\b",
     r"\bstatus\b",
+    r"\b(?:list|show|get|all|my)\b.*\b(?:order|orders|product|products|item|items)\b",
+    r"\b(?:orders|products)\b",
 ]
 
 

@@ -23,7 +23,8 @@ type ShipmentDetail = paths["/api/v1/orders/{order_id}/shipment"]["get"]["respon
 type ReturnItem = paths["/api/v1/returns"]["get"]["responses"][200]["content"]["application/json"][0];
 
 export function OrderDetailPage() {
-  const { id: orderId } = useParams<{ id: string }>();
+  const { orderId: paramOrderId, id } = useParams<{ orderId?: string; id?: string }>();
+  const orderId = paramOrderId || id;
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [shipment, setShipment] = useState<ShipmentDetail | null>(null);
@@ -36,7 +37,11 @@ export function OrderDetailPage() {
 
   useEffect(() => {
     async function loadOrder() {
-      if (!orderId) return;
+      if (!orderId) {
+        setLoading(false);
+        setNotFound(true);
+        return;
+      }
       setLoading(true);
       setError(null);
       setNotFound(false);

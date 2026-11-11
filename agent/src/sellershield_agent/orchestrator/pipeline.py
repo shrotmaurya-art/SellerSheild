@@ -28,6 +28,9 @@ from sellershield_agent.compose.templates import (
     order_status as template_order_status,
 )
 from sellershield_agent.compose.templates import (
+    orders_list as template_orders_list,
+)
+from sellershield_agent.compose.templates import (
     policy_summary as template_policy_summary,
 )
 from sellershield_agent.compose.templates import (
@@ -870,8 +873,10 @@ class ConversationPipeline:
             if intent_val == Intent.SHIPPING_STATUS:
                 draft_text = template_shipping_status(sheet, "en")
             elif intent_val == Intent.ORDER_STATUS:
+                if sheet.orders and not extracted_order_id:
+                    draft_text = template_orders_list(sheet, "en")
                 # Prefer shipping info with ETA if available
-                if sheet.eta_at_ist or sheet.carrier or "in transit" in (sheet.status or ""):
+                elif sheet.eta_at_ist or sheet.carrier or "in transit" in (sheet.status or ""):
                     draft_text = template_shipping_status(sheet, "en")
                 else:
                     draft_text = template_order_status(sheet, "en")
@@ -1007,6 +1012,10 @@ class ConversationPipeline:
                     cards_to_emit.append(build_shipment_timeline_card(r.data))
                 elif "total_paise" in r.data and "items" in r.data:
                     cards_to_emit.append(build_order_summary_card(r.data))
+                elif "orders" in r.data and isinstance(r.data["orders"], list):
+                    for o in r.data["orders"][:3]:
+                        if isinstance(o, dict) and "order_id" in o:
+                            cards_to_emit.append(build_order_summary_card(o))
 
         for c in cards_to_emit:
             yield ("card", c)

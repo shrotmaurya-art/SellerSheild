@@ -70,13 +70,7 @@ def parse_rupees(text: str) -> int:
     sign, digits, exponent = d.as_tuple()
     # exponent is negative for decimals: Decimal("100.999").as_tuple().exponent == -3
     if isinstance(exponent, int) and exponent < -2:
-<<<<<<< HEAD
         raise ValueError(f"at most 2 decimal places allowed, got {text!r}")
-=======
-        raise ValueError(
-            f"at most 2 decimal places allowed, got {text!r}"
-        )
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     # Convert to paise: multiply by 100 using Decimal (no float)
     paise_decimal = d * 100
@@ -147,7 +141,3 @@ def allocate_largest_remainder(total_paise: int, weights: list[int]) -> list[int
         floors[idx] += 1
 
     return floors
-<<<<<<< HEAD
-=======
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

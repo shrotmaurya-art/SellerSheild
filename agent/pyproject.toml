@@ -41,10 +41,7 @@ dev = [
 strict = true
 python_version = "3.12"
 warn_unused_configs = true
-<<<<<<< HEAD
 mypy_path = ".."
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 [tool.ruff]
 target-version = "py312"
@@ -54,10 +51,10 @@ line-length = 100
 select = ["E", "F", "I", "B", "UP"]
 ignore = []
 
-<<<<<<< HEAD
 [tool.ruff.lint.per-file-ignores]
 "tests/test_store_write.py" = ["E501", "F401"]
 "tests/fault_plan.py" = ["F401"]
+"tests/security/*" = ["E501", "F401", "I001", "F841"]
 "tests/test_propose_tools.py" = ["I001"]
 "tests/e2e/test_gate_g3.py" = ["E501", "I001", "F401", "F841"]
 "tests/redteam/test_phase3.py" = ["E501", "I001", "F401", "F841"]
@@ -67,9 +64,3 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 pythonpath = ["src", ".."]
 testpaths = ["tests", "../tests/guard"]
-=======
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

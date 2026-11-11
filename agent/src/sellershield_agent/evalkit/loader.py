@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from sellershield_agent.evalkit.schema import ConversationCase, GoldenIntent
 from sellershield_agent.understand.schema import Intent
@@ -44,7 +44,8 @@ def load_convo_file(file_path: Path | str) -> ConversationCase:
         amount = case.expect.proposal.amount_paise
         if not isinstance(amount, int) or amount < 0:
             raise ValueError(
-                f"Case {case.id} money proposal must specify non-negative int amount_paise, got: {amount}"
+                f"Case {case.id} money proposal must specify non-negative int amount_paise, "
+                f"got: {amount}"
             )
 
     return case

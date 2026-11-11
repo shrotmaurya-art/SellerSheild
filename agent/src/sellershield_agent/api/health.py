@@ -1,17 +1,10 @@
 from datetime import UTC, datetime
-<<<<<<< HEAD
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from sellershield_agent.auth import deps
-=======
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 from sellershield_agent.config import ConfigError, get_settings
 
 router = APIRouter(tags=["Health"])
@@ -20,11 +13,8 @@ router = APIRouter(tags=["Health"])
 class HealthResponse(BaseModel):
     status: str
     timestamp: str
-<<<<<<< HEAD
     store_mode: str | None = None
     dev_faults: dict[str, bool] | None = None
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
 
 @router.get(
@@ -44,17 +34,11 @@ async def healthz() -> HealthResponse:
     summary="Readiness probe",
     description="Returns 200 when ready, or 200 degraded when store JWKS is down.",
 )
-<<<<<<< HEAD
 async def readyz(
     jwks_client: Annotated[Any, Depends(deps.get_jwks_client)] = None,
 ) -> HealthResponse:
     try:
         settings = get_settings()
-=======
-async def readyz() -> HealthResponse:
-    try:
-        get_settings()
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     except ConfigError as err:
         raise HTTPException(
             status_code=503,
@@ -68,20 +52,12 @@ async def readyz() -> HealthResponse:
 
     status = "ok"
     try:
-<<<<<<< HEAD
         resolved_jwks = jwks_client or deps.get_jwks_client()
         if not resolved_jwks.is_healthy():
-=======
-        from sellershield_agent.auth import deps
-
-        jwks_client = deps.get_jwks_client()
-        if not jwks_client.is_healthy():
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             status = "degraded"
     except Exception:
         status = "degraded"
 
-<<<<<<< HEAD
     # Report store reachability when STORE_MODE is http
     if settings.STORE_MODE == "http":
         try:
@@ -114,7 +90,3 @@ async def readyz() -> HealthResponse:
         store_mode=settings.STORE_MODE,
         dev_faults=dev_faults,
     )
-=======
-    now_utc = datetime.now(UTC).isoformat()
-    return HealthResponse(status=status, timestamp=now_utc)
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

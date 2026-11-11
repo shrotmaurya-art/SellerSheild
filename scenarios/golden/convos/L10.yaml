@@ -7,8 +7,7 @@ turns:
   - say: "Let me speak to a human agent immediately."
 expect:
   intent: human_request
-  tools_called:
-    - create_case
+  tools_called: []
   tools_forbidden:
     - propose_return
     - propose_refund

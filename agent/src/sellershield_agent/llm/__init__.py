@@ -25,7 +25,3 @@ __all__ = [
     "generate_structured",
     "load_providers_from_settings",
 ]
-<<<<<<< HEAD
-=======
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

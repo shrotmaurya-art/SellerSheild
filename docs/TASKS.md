@@ -58,6 +58,10 @@ T3.5  Overview, dev controls and demo run script            DONE
 T3.6  Gate G3 tests and red team                            DONE
 T3.7  Real store: mail and shipments                        DONE
 
+## Phase 4 - Hardening, Security & Evaluation
+L4.3  demo_check: the demo beats as one command             DONE
+L4.4  Security minimum: route sweep, DEV gating, log redaction DONE
+
 ## DEFERRED TESTS
 - stream cursor edge cases
 - retention

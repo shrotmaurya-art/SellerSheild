@@ -40,10 +40,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="empty_or_non_string_token",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     if len(token) > 65536:
@@ -52,10 +49,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="token_too_large",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     # 1. Unverified header validation
@@ -67,10 +61,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="invalid_token_header",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
 
     alg = unverified_header.get("alg")
@@ -80,10 +71,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="rejected_algorithm",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     kid = unverified_header.get("kid")
@@ -93,10 +81,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="missing_or_invalid_kid",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     # 2. Key lookup from JWKS
@@ -116,10 +101,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="kid_lookup_failed",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
 
     # 3. Signature, claim, and audience verification
@@ -153,10 +135,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="invalid_audience",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
     except jwt.InvalidIssuerError:
         logger.warning("auth_failed", reason="invalid_issuer")
@@ -164,10 +143,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="invalid_issuer",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
     except Exception as exc:
         logger.warning("auth_failed", reason="jwt_decode_error", error=str(exc))
@@ -175,10 +151,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="jwt_decode_error",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
 
     # 4. Strict time checks evaluated against domain Clock (KP-06)
@@ -192,10 +165,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="invalid_exp_claim",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
     if exp_val <= (now_ts - leeway):
         logger.warning("auth_failed", reason="token_expired")
@@ -203,10 +173,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="token_expired",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     iat_val = payload.get("iat")
@@ -216,10 +183,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="invalid_iat_claim",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
     if iat_val > (now_ts + leeway):
         logger.warning("auth_failed", reason="token_issued_in_future")
@@ -227,10 +191,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="token_issued_in_future",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         )
 
     nbf_val = payload.get("nbf")
@@ -241,10 +202,7 @@ def verify_token(
                 status_code=401,
                 code="unauthenticated",
                 message="Authentication required",
-<<<<<<< HEAD
                 reason="token_not_yet_valid",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
             )
 
     # 5. Role and identity invariants
@@ -257,10 +215,7 @@ def verify_token(
             status_code=401,
             code="unauthenticated",
             message="Authentication required",
-<<<<<<< HEAD
             reason="unknown_role",
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         ) from None
 
     customer_id = payload.get("customer_id")
@@ -271,7 +226,6 @@ def verify_token(
                 status_code=401,
                 code="unauthenticated",
                 message="Authentication required",
-<<<<<<< HEAD
                 reason="customer_token_missing_customer_id",
             )
 
@@ -288,16 +242,11 @@ def verify_token(
             )
         store_id = raw_store_id.strip()
 
-=======
-            )
-
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
     raw_scopes = payload.get("scopes", [])
     scopes = [str(s) for s in raw_scopes] if isinstance(raw_scopes, list) else []
 
     auth_time_val = payload.get("auth_time")
     auth_time: int | None = None
-<<<<<<< HEAD
     if auth_time_val is not None and not isinstance(auth_time_val, bool):
         if isinstance(auth_time_val, (int, float)):
             auth_time = int(auth_time_val)
@@ -306,22 +255,12 @@ def verify_token(
                 auth_time = int(auth_time_val)
             except ValueError:
                 auth_time = None
-=======
-    if auth_time_val is not None:
-        try:
-            auth_time = int(auth_time_val)
-        except (ValueError, TypeError):
-            auth_time = None
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
 
     return Principal(
         user_id=str(payload["sub"]),
         role=role,
         customer_id=customer_id if role == Role.customer else customer_id or None,
-<<<<<<< HEAD
         store_id=store_id,
-=======
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be
         scopes=scopes,
         auth_time=auth_time,
         jti=str(payload["jti"]),

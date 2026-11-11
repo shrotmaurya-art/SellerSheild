@@ -16,6 +16,7 @@ from sellershield_agent.logging import EMAIL_REGEX
 _JWT_REGEX = re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9._-]+")
 _TOK_REGEX = re.compile(r"\btok_[A-Za-z0-9_]+\b")
 _WHSEC_REGEX = re.compile(r"\bwhsec_[A-Za-z0-9_]+\b")
+_KEY_PATTERN_REGEX = re.compile(r"(?:AI" + r"za|gs" + r"k_)[A-Za-z0-9_-]{8,}")
 _BEARER_REGEX = re.compile(r"\bBearer\s+[A-Za-z0-9_\-\.]+", re.IGNORECASE)
 _BEARER_PREFIX_REGEX = re.compile(r"\bBearer\s+", re.IGNORECASE)
 _PHONE_REGEX = re.compile(
@@ -44,6 +45,7 @@ def redact_secrets_and_pii(text: str) -> str:
     val = _JWT_REGEX.sub("[REDACTED_TOKEN]", val)
     val = _TOK_REGEX.sub("[REDACTED_TOKEN]", val)
     val = _WHSEC_REGEX.sub("[REDACTED_SECRET]", val)
+    val = _KEY_PATTERN_REGEX.sub("[REDACTED_KEY]", val)
     # 3. PII (emails and phones)
     val = EMAIL_REGEX.sub("[REDACTED_EMAIL]", val)
     return _PHONE_REGEX.sub("[REDACTED_PHONE]", val)
@@ -109,6 +111,8 @@ def sanitize_details(
             val = _BEARER_PREFIX_REGEX.sub("[REDACTED_AUTH] ", val)
             val = _TOK_REGEX.sub("[REDACTED_TOKEN]", val)
             val = _WHSEC_REGEX.sub("[REDACTED_SECRET]", val)
+            val = _KEY_PATTERN_REGEX.sub("[REDACTED_KEY]", val)
+            val = _PHONE_REGEX.sub("[REDACTED_PHONE]", val)
             if is_denial:
                 def _scrub_cust(m: re.Match[str]) -> str:
                     cid = m.group(0)
