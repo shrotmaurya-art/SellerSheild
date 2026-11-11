@@ -1,17 +1,21 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
+  Activity,
   ArrowLeft,
   Bot,
   Clock,
+  FileSearch,
   Gauge,
   Inbox,
   LogOut,
   Menu,
+  MessageSquare,
   Package,
   RotateCcw,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   ShoppingBag,
   Sliders,
   Store,
@@ -250,9 +254,35 @@ export function SellerLayout({ children }: { children: ReactNode }) {
               </NavLink>
             )}
 
-            <NavLink to="/seller/shield" className={navItemClass}>
+            <div className="pt-3 pb-1">
+              <div className="border-t border-slate-800/80 px-2 pt-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+                SellerShield AI
+              </div>
+            </div>
+
+            <NavLink to="/seller/shield" end className={navItemClass}>
               <Bot className="h-4 w-4 text-teal-400" />
-              <span>SellerShield AI</span>
+              <span>AI Overview</span>
+            </NavLink>
+
+            <NavLink to="/seller/approvals" className={navItemClass}>
+              <ShieldCheck className="h-4 w-4 text-amber-400" />
+              <span>Approval Queue</span>
+            </NavLink>
+
+            <NavLink to="/seller/cases" className={navItemClass}>
+              <MessageSquare className="h-4 w-4 text-teal-400" />
+              <span>Escalation Cases</span>
+            </NavLink>
+
+            <NavLink to="/seller/activity" className={navItemClass}>
+              <Activity className="h-4 w-4 text-slate-400" />
+              <span>Monitor &amp; Outbox</span>
+            </NavLink>
+
+            <NavLink to="/seller/audit" className={navItemClass}>
+              <FileSearch className="h-4 w-4 text-slate-400" />
+              <span>Audit &amp; Traces</span>
             </NavLink>
           </nav>
         </div>

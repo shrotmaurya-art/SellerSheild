@@ -211,11 +211,23 @@ def prepare_run_sync(
             None,
         )
 
+        rfd_ref = next(
+            (
+                str(r.store_ref)
+                for r in exec_rows
+                if str(r.step) == "reserve_refund"
+                and str(r.status) == "succeeded"
+                and r.store_ref is not None
+            ),
+            None,
+        )
+
         if status == ProposalStatus.succeeded.value:
             return ExecutionResult(
                 status="succeeded",
                 return_id=ret_ref,
                 approval_id=None,
+                refund_id=rfd_ref,
                 message_key="proposal.succeeded",
             )
         if status == ProposalStatus.failed.value:
@@ -234,6 +246,7 @@ def prepare_run_sync(
                 status="pending_approval",
                 return_id=str(apr_row.return_id) if apr_row.return_id else ret_ref,
                 approval_id=str(apr_row.approval_id),
+                refund_id=str(apr_row.refund_id) if apr_row.refund_id else None,
                 message_key="proposal.pending_approval",
             )
 

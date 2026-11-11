@@ -125,6 +125,15 @@ class ProposeRefundArgs(BaseModel):
         return _validate_unique_items(value)
 
 
+class ProposeCancellationArgs(BaseModel):
+    """Strict input arguments for propose_cancellation (extra fields forbidden)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    order_id: str
+    reason_text: str | None = None
+
+
 def sanitize_reason_text(raw: str | None) -> str:
     """Strip HTML tags and control characters and cap at 200 characters."""
     if raw is None:
@@ -473,6 +482,80 @@ async def handle_propose_refund(ctx: ToolContext, args: ProposeRefundArgs) -> To
     return ToolResult(ok=True, data=card_payload, fact_ids=[order.order_id, proposal_id])
 
 
+async def handle_propose_cancellation(
+    ctx: ToolContext, args: ProposeCancellationArgs
+) -> ToolResult:
+    """Create a deterministic pre-dispatch order cancellation proposal."""
+    customer_id = ctx.customer_ctx.principal.customer_id
+    if not customer_id:
+        return ToolResult(
+            ok=False,
+            error_code=ToolErrorCode.not_permitted,
+            error_message=get_customer_safe_message(ToolErrorCode.not_permitted),
+        )
+    if ctx.engine is None:
+        return ToolResult(
+            ok=False,
+            error_code=ToolErrorCode.internal,
+            error_message=get_customer_safe_message(ToolErrorCode.internal),
+        )
+
+    order = await ctx.store_client.get_order(ctx.customer_ctx, args.order_id)
+    if order.customer_id != customer_id:
+        raise StoreNotFound(f"Order {args.order_id} not found")
+
+    requested_items = [ReturnItem(item_id=it.item_id, qty=it.qty) for it in order.items]
+    existing_card, existing_id, rate_limited = check_limits_readonly(
+        ctx.engine,
+        customer_id=customer_id,
+        order_id=order.order_id,
+        item_sig=canonical_item_signature(requested_items),
+        clock=ctx.clock,
+    )
+    if existing_card is not None and existing_id is not None:
+        return ToolResult(ok=True, data=existing_card, fact_ids=[order.order_id, existing_id])
+    if rate_limited:
+        return _rate_limited_result()
+
+    facts = await _fetch_decision_facts(
+        ctx,
+        order=order,
+        customer_id=customer_id,
+        action=DecisionAction.cancellation,
+        requested_items=requested_items,
+        reason_code=ReturnReasonCode.changed_mind,
+        resolution=ReturnResolution.refund,
+        refund_method=RefundMethod.original,
+        evidence_present=False,
+    )
+    decision = decide(facts, ctx.policy, facts.now)
+    early = _non_proposal_result(order.order_id, decision)
+    if early is not None:
+        return early
+
+    card_payload, proposal_id, rate_limited = persist_proposal_and_build_card(
+        ctx.engine,
+        clock=ctx.clock,
+        policy=ctx.policy,
+        request_id=ctx.customer_ctx.request_id,
+        session_id=ctx.session_id,
+        customer_id=customer_id,
+        order=order,
+        proposal_type="cancel",
+        requested_items=requested_items,
+        facts=facts,
+        decision=decision,
+        effective_outcome=DecisionOutcome(decision.decision),
+        method_str=RefundMethod.original.value,
+        resolution_str=ReturnResolution.refund.value,
+        sanitized_reason_text=sanitize_reason_text(args.reason_text),
+        extra_payload={"reason_code": ReturnReasonCode.changed_mind.value},
+    )
+    if rate_limited or card_payload is None or proposal_id is None:
+        return _rate_limited_result()
+    return ToolResult(ok=True, data=card_payload, fact_ids=[order.order_id, proposal_id])
+
+
 def build_propose_tools() -> dict[str, Tool]:
     """Instantiate all propose tools with ToolKind.PROPOSE."""
     return {
@@ -495,5 +578,14 @@ def build_propose_tools() -> dict[str, Tool]:
             args_model=ProposeRefundArgs,
             kind=ToolKind.PROPOSE,
             handler=handle_propose_refund,
+        ),
+        "propose_cancellation": Tool(
+            name="propose_cancellation",
+            description=(
+                "Create a pre-dispatch order cancellation proposal for customer confirmation."
+            ),
+            args_model=ProposeCancellationArgs,
+            kind=ToolKind.PROPOSE,
+            handler=handle_propose_cancellation,
         ),
     }

@@ -43,7 +43,12 @@ def build_decision_facts_from_bundle(
     """Build live DecisionFacts from store bundle for deterministic decide()."""
     if bundle.order is None or bundle.adjusted_refundable is None:
         return None
-    action = DecisionAction.refund_request if proposal_type == "refund" else DecisionAction.return_
+    if proposal_type == "cancel":
+        action = DecisionAction.cancellation
+    elif proposal_type == "refund":
+        action = DecisionAction.refund_request
+    else:
+        action = DecisionAction.return_
     resolved_risk = bundle.customer_risk or fallback_risk
     resolved_prev = max(previous_refunds_30d_paise, resolved_risk.refunded_30d_paise)
     try:
@@ -55,11 +60,12 @@ def build_decision_facts_from_bundle(
     except ValueError:
         res = ReturnResolution.refund
     try:
-        rc = (
-            ReturnReasonCode.defective
-            if proposal_type == "refund"
-            else ReturnReasonCode(reason_code)
-        )
+        if proposal_type == "cancel":
+            rc = ReturnReasonCode.changed_mind
+        elif proposal_type == "refund":
+            rc = ReturnReasonCode.defective
+        else:
+            rc = ReturnReasonCode(reason_code)
     except ValueError:
         rc = ReturnReasonCode.changed_mind
 
@@ -368,6 +374,8 @@ def compute_recommendation(
         return "review", "Facts or active policy changed since proposal creation; review required."
     if decision is None:
         return "review", "Live verification context unavailable; manual review required."
+    if proposal_type == "cancel":
+        return "review", "Pre-dispatch cancellation requires manual verification."
     if proposal_type != "return":
         return "review", "Non-return refund request requires manual verification."
     if decision.risk.band == RiskBand.high:

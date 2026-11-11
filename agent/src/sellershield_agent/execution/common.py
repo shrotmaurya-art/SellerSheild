@@ -141,9 +141,12 @@ def format_execution_status_message(
     message_key: str | None = None,
     return_id: str | None = None,
     approval_id: str | None = None,
+    proposal_type: str | None = None,
 ) -> str:
     """Return a truthful, customer-safe status message without internal limit leaks."""
     if status == "succeeded":
+        if proposal_type == "cancel":
+            return "Your order cancellation has been confirmed and completed."
         if return_id:
             return f"Your return request {return_id} has been created and approved."
         return "Your request has been confirmed and completed."
@@ -152,6 +155,8 @@ def format_execution_status_message(
         if return_id and approval_id:
             return f"Your return request {return_id} is pending seller review ({approval_id})."
         if approval_id:
+            if proposal_type == "cancel":
+                return f"Your order cancellation is pending seller review ({approval_id})."
             return f"Your refund request is pending seller review ({approval_id})."
         return "Your request is pending seller review."
 

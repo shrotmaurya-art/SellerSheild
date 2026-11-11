@@ -28,7 +28,12 @@ from sellershield_agent.approvals.revalidation import (
 )
 from sellershield_agent.audit.models import ActorType, EventType, Outcome
 from sellershield_agent.clock import Clock
-from sellershield_agent.domain.models import CustomerRiskFacts, RefundStatus, ReturnStatus
+from sellershield_agent.domain.models import (
+    CustomerRiskFacts,
+    OrderStatus,
+    RefundStatus,
+    ReturnStatus,
+)
 from sellershield_agent.domain.state import InvalidTransition, VersionMismatch
 from sellershield_agent.errors import AppHTTPException
 from sellershield_agent.execution.common import build_service_ctx
@@ -216,6 +221,17 @@ async def execute_approve_decision(
                 clean_note,
                 f"{approval_id}:transition_return",
             )
+
+        if proposal_type == "cancel" and not (
+            bundle.order is not None and bundle.order.status == OrderStatus.cancelled
+        ):
+            cancelled_ord = await store_client.cancel_order(
+                exec_seller_ctx,
+                order_id,
+                clean_note or "Approved pre-dispatch cancellation",
+                f"{approval_id}:cancel_order",
+            )
+            obtained_auth_ref = obtained_auth_ref or f"CANCEL-{cancelled_ord.order_id}"
     except (StoreClientError, TimeoutError) as exc:
         err_summary = f"{type(exc).__name__}: {exc}"[:300]
         await asyncio.to_thread(

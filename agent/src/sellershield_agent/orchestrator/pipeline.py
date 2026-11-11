@@ -21,6 +21,9 @@ from sellershield_agent.auth.models import Principal
 from sellershield_agent.clock import Clock
 from sellershield_agent.compose.factsheet import build_factsheet
 from sellershield_agent.compose.templates import (
+    cancellation_denied as template_cancellation_denied,
+)
+from sellershield_agent.compose.templates import (
     guided_mode_menu,
     not_found,
 )
@@ -76,8 +79,12 @@ from sellershield_agent.store.client import RequestContext, StoreClient
 from sellershield_agent.tools.base import ToolErrorCode
 from sellershield_agent.tools.gateway import ToolGateway
 from sellershield_agent.understand.injection import detect_injection_heuristics
-from sellershield_agent.understand.router import DeterministicRouter, extract_order_ids
-from sellershield_agent.understand.schema import Intent
+from sellershield_agent.understand.router import (
+    DEVANAGARI_REGEX,
+    DeterministicRouter,
+    extract_order_ids,
+)
+from sellershield_agent.understand.schema import Intent, Language
 from sellershield_agent.understand.service import UnderstandContext, understand
 
 logger = get_logger("sellershield_agent.orchestrator.pipeline")
@@ -158,6 +165,8 @@ class ConversationPipeline:
         customer_id = principal.customer_id or principal.user_id
         raw_text = input_data.text or ""
         sanitized_text = sanitize_message_text(raw_text) if raw_text else ""
+        early_is_hi = bool(sanitized_text and DEVANAGARI_REGEX.search(sanitized_text))
+        early_lang = "hi" if early_is_hi else "en"
         client_msg_id = input_data.client_msg_id
         action = input_data.action
 
@@ -247,7 +256,12 @@ class ConversationPipeline:
             re.IGNORECASE,
         ):
             verified_text = (
-                "Invalid quantity requested. Please specify a positive quantity of items to return."
+                "अमान्य मात्रा अनुरोधित। कृपया वापस करने के लिए सही सकारात्मक संख्या बताएं।"
+                if early_is_hi
+                else (
+                    "Invalid quantity requested. Please specify a positive quantity "
+                    "of items to return."
+                )
             )
             for chunk in verified_text.split():
                 yield ("message.delta", {"delta": chunk + " "})
@@ -280,7 +294,9 @@ class ConversationPipeline:
 
         if session_handler == "human":
             verified_text = (
-                "A team member is handling this case. We will follow up with you directly."
+                "इस मामले को हमारी सहायता टीम का सदस्य देख रहा है। हम आपसे सीधे संपर्क करेंगे।"
+                if early_is_hi
+                else "A team member is handling this case. We will follow up with you directly."
             )
             for chunk in verified_text.split():
                 yield ("message.delta", {"delta": chunk + " "})
@@ -411,19 +427,56 @@ class ConversationPipeline:
                 if not extracted_order_id and sanitized_text:
                     is_listing_query = bool(
                         re.search(
-                            r"\b(?:my\s+orders|all\s+orders|list\s+orders|show\s+orders)\b",
+                            r"\b(?:(?:my|all|list|show)\s+(?:all\s+|my\s+)?orders?|"
+                            r"(?:mere|sabhi|saare|sare|sab|apne)\s+(?:saare\s+|sare\s+|sabhi\s+)?orders?(?:\s+(?:dikhao|dikhaye|batao|bataiye|list))?|"
+                            r"orders?\s+(?:dikhao|dikhaye|batao|bataiye|list))\b",
                             sanitized_text,
+                            re.IGNORECASE,
+                        )
+                    ) or any(
+                        p in sanitized_text
+                        for p in (
+                            "मेरे ऑर्डर",
+                            "सभी ऑर्डर",
+                            "सारे ऑर्डर",
+                            "मेरे सभी ऑर्डर",
+                            "मेरे सारे ऑर्डर",
+                        )
+                    )
+                    has_explicit_malformed_ord = bool(
+                        re.search(
+                            r"\bORD-[A-Za-z0-9_-]+\b",
+                            sanitized_text.translate(str.maketrans("०१२३४५६७८९", "0123456789")),
                             re.IGNORECASE,
                         )
                     )
                     is_unspecific_where = bool(
                         re.search(
-                            r"^\s*where\s+is\s+my\s+order\s*\??\s*$",
+                            r"^\s*(?:where\s+is\s+my\s+(?:order|refund|return|parcel|money)|"
+                            r"what\s+happened\s+to\s+my\s+(?:order|refund|return)|"
+                            r"(?:check\s+)?(?:my\s+)?(?:refund|return|order)\s+status|"
+                            r"(?:(?:mera|meri|mere)\s+)?(?:order|refund|return|parcel|paisa|paise)\s+"
+                            r"(?:kahan|kaha|kidhar|kab).*)\s*\??\s*$",
                             sanitized_text,
                             re.IGNORECASE,
                         )
+                    ) or any(
+                        p in sanitized_text
+                        for p in (
+                            "मेरा ऑर्डर कहाँ",
+                            "मेरा रिफंड कहाँ",
+                            "मेरा रिफंड कब",
+                            "मेरे पैसे कब",
+                            "पैसे कब",
+                            "रिफंड कहाँ",
+                            "मेरा रिटर्न कहाँ",
+                        )
                     )
-                    if not is_listing_query and not is_unspecific_where:
+                    if (
+                        not is_listing_query
+                        and not is_unspecific_where
+                        and not has_explicit_malformed_ord
+                    ):
                         try:
                             with self.engine.connect() as ctx_conn:
                                 prev_rows = ctx_conn.execute(
@@ -444,6 +497,39 @@ class ConversationPipeline:
                     intent_val = Intent.RETURN_REQUEST
                 elif is_refund_status_query:
                     intent_val = Intent.REFUND_STATUS
+                elif (
+                    intent_val == Intent.RETURN_REQUEST
+                    and sanitized_text
+                    and re.search(
+                        r"\b(?:paisa|paise|refund)\b.*\b(?:kab|kahan|kaha|aayenge|aayega|milega|milenge|status)\b",
+                        sanitized_text,
+                        re.IGNORECASE,
+                    )
+                    and not re.search(
+                        r"\b(?:return|replace|exchange|samaan|saman|kurta|shirt|item)\b",
+                        sanitized_text,
+                        re.IGNORECASE,
+                    )
+                ):
+                    intent_val = Intent.REFUND_STATUS
+                    is_refund_status_query = True
+                elif (
+                    intent_val == Intent.RETURN_REQUEST
+                    and sanitized_text
+                    and re.search(
+                        r"\b(?:return\s+status|status\s+of\s+(?:my\s+)?return|"
+                        r"where\s+is\s+my\s+return|(?:mera\s+)?return\s+(?:kahan|kaha|kab|status)|"
+                        r"return\s+ka\s+status)\b",
+                        sanitized_text,
+                        re.IGNORECASE,
+                    )
+                    and not re.search(
+                        r"\b(?:want\s+to\s+return|return\s+it|return\s+this|return\s+karna|wapas|replace)\b",
+                        sanitized_text,
+                        re.IGNORECASE,
+                    )
+                ):
+                    is_return_status_query = True
 
         # ── Stage 2: Workflow resolution ──────────────────────────────────────
         trace: dict[str, Any] = {"request_id": request_id, "intent": intent_val}
@@ -483,8 +569,13 @@ class ConversationPipeline:
                 )
             )
             verified_text = (
-                "I'm currently running in guided mode. How can I help you today? "
-                "Please choose one of the options below:"
+                "मैं अभी गाइडेड मोड में चल रहा हूँ। आज मैं आपकी किस प्रकार सहायता कर सकता हूँ? "
+                "कृपया नीचे दिए गए विकल्पों में से एक चुनें:"
+                if early_is_hi
+                else (
+                    "I'm currently running in guided mode. How can I help you today? "
+                    "Please choose one of the options below:"
+                )
             )
             # Yield message chunks and cards
             for chunk in verified_text.split():
@@ -604,8 +695,13 @@ class ConversationPipeline:
                 )
                 cards_to_emit.append(chip_card)
                 verified_text = (
-                    "I understand you are frustrated. If you would like to speak directly "
-                    "with our team, please tap below:"
+                    "मैं समझता हूँ कि आप परेशान हैं। यदि आप हमारी टीम से सीधे बात करना "
+                    "चाहते हैं, तो कृपया नीचे टैप करें:"
+                    if early_is_hi
+                    else (
+                        "I understand you are frustrated. If you would like to speak directly "
+                        "with our team, please tap below:"
+                    )
                 )
                 for chunk in verified_text.split():
                     yield ("message.delta", {"delta": chunk + " "})
@@ -654,9 +750,15 @@ class ConversationPipeline:
 
             if esc_res is not None and esc_res.case_id:
                 sla_text = "within 2 hours" if esc_res.priority == "high" else "within 24 hours"
+                sla_hi = "2 घंटे के भीतर" if esc_res.priority == "high" else "24 घंटे के भीतर"
                 verified_text = (
-                    f"We have opened case {esc_res.case_id} for you. A support team member "
-                    f"will review your request and follow up {sla_text}."
+                    f"हमने आपके लिए केस {esc_res.case_id} खोल दिया है। हमारी सहायता टीम का सदस्य "
+                    f"आपके अनुरोध की समीक्षा करके {sla_hi} आपसे संपर्क करेगा।"
+                    if early_is_hi
+                    else (
+                        f"We have opened case {esc_res.case_id} for you. A support team member "
+                        f"will review your request and follow up {sla_text}."
+                    )
                 )
                 case_card = build_case_created_card(
                     case_id=esc_res.case_id,
@@ -666,7 +768,12 @@ class ConversationPipeline:
                 cards_to_emit.append(case_card)
             else:
                 verified_text = (
-                    "We could not create a support case at this moment. Please try again later."
+                    "हम अभी सहायता केस नहीं बना सके। कृपया थोड़ी देर बाद पुनः प्रयास करें।"
+                    if early_is_hi
+                    else (
+                        "We could not create a support case at this moment. "
+                        "Please try again later."
+                    )
                 )
 
             for chunk in verified_text.split():
@@ -692,7 +799,6 @@ class ConversationPipeline:
         if intent_val in (
             Intent.DAMAGED_ITEM,
             Intent.WRONG_ITEM,
-            Intent.CANCELLATION,
         ):
             # Honest not-available template; record escalation trigger in audit
             with write_tx(self.engine) as conn:
@@ -714,16 +820,14 @@ class ConversationPipeline:
                     ),
                 )
 
-            if intent_val == Intent.CANCELLATION:
-                verified_text = (
-                    "Order cancellation is not available in this build. "
-                    "If your order has arrived, return options may apply."
-                )
-            else:
-                verified_text = (
+            verified_text = (
+                "क्षतिग्रस्त या गलत आइटम के लिए केस बनाना इस संस्करण में उपलब्ध नहीं है।"
+                if early_is_hi
+                else (
                     "Reporting damaged or wrong items with case creation "
                     "is not available in this build."
                 )
+            )
 
             for chunk in verified_text.split():
                 yield ("message.delta", {"delta": chunk + " "})
@@ -758,6 +862,8 @@ class ConversationPipeline:
                     "list_my_orders",
                     "propose_return",
                 ]
+        elif intent_val == Intent.CANCELLATION:
+            allowed_tools = ["get_order", "propose_cancellation", "list_my_orders"]
         elif intent_val == Intent.POLICY_QUESTION:
             allowed_tools = ["get_policy_summary"]
 
@@ -768,6 +874,9 @@ class ConversationPipeline:
             tool_status_events.append({"tool_name": tool_name, "status": state})
 
         u_res = locals().get("understanding_res")
+        u_lang = getattr(u_res, "language", None)
+        is_hi = bool(u_lang == Language.HI or early_is_hi)
+        resp_lang = "hi" if is_hi else "en"
         slots: dict[str, Any] = {
             "order_id": extracted_order_id,
             "return_id": extracted_return_id,
@@ -791,7 +900,7 @@ class ConversationPipeline:
             allowed_tools=allowed_tools,
             slots=slots,
             session_id=session_id,
-            lang="en",
+            lang=resp_lang,
             status_callback=status_callback,
             trace=trace,
         )
@@ -836,9 +945,15 @@ class ConversationPipeline:
 
             if esc_res is not None and esc_res.case_id:
                 sla_text = "within 2 hours" if esc_res.priority == "high" else "within 24 hours"
+                sla_hi = "2 घंटे के भीतर" if esc_res.priority == "high" else "24 घंटे के भीतर"
                 verified_text = (
-                    f"We have opened case {esc_res.case_id} for you. A support team member "
-                    f"will review your request and follow up {sla_text}."
+                    f"हमने आपके लिए केस {esc_res.case_id} खोल दिया है। हमारी सहायता टीम का सदस्य "
+                    f"आपके अनुरोध की समीक्षा करके {sla_hi} आपसे संपर्क करेगा।"
+                    if early_is_hi
+                    else (
+                        f"We have opened case {esc_res.case_id} for you. A support team member "
+                        f"will review your request and follow up {sla_text}."
+                    )
                 )
                 case_card = build_case_created_card(
                     case_id=esc_res.case_id,
@@ -848,7 +963,12 @@ class ConversationPipeline:
                 cards_to_emit.append(case_card)
             else:
                 verified_text = (
-                    "We could not create a support case at this moment. Please try again later."
+                    "हम अभी सहायता केस नहीं बना सके। कृपया थोड़ी देर बाद पुनः प्रयास करें।"
+                    if early_is_hi
+                    else (
+                        "We could not create a support case at this moment. "
+                        "Please try again later."
+                    )
                 )
 
             for chunk in verified_text.split():
@@ -879,13 +999,18 @@ class ConversationPipeline:
         )
 
         # Typos or malformed IDs in text: treat as not found rather than guessing orders
-        candidate_ord_tokens = re.findall(r"\bORD-[A-Za-z0-9_-]+\b", sanitized_text, re.IGNORECASE)
+        sanitized_ascii_digits = sanitized_text.translate(
+            str.maketrans("०१२३४५६७८९", "0123456789")
+        )
+        candidate_ord_tokens = re.findall(
+            r"\bORD-[A-Za-z0-9_-]+\b", sanitized_ascii_digits, re.IGNORECASE
+        )
         if any(
             not re.match(r"^ORD-[0-9]{3,6}$", tok, re.IGNORECASE) for tok in candidate_ord_tokens
         ):
             order_not_found_detected = True
 
-        sheet = build_factsheet(tool_results, language="en", clock=self.clock)
+        sheet = build_factsheet(tool_results, language=resp_lang, clock=self.clock)
         has_confirmation = any(
             r.ok and isinstance(r.data, dict) and r.data.get("type") == "confirmation"
             for r in tool_results
@@ -894,32 +1019,37 @@ class ConversationPipeline:
         # Build candidate draft
         draft_text = ""
         if order_not_found_detected:
-            draft_text = not_found(sheet, "en")
+            draft_text = not_found(sheet, resp_lang)
         elif mock_draft_for_test is not None:
             # Test injection hook for verifying hallucination defense
             draft_text = mock_draft_for_test
         elif has_confirmation:
-            draft_text = template_proposal_confirmation(sheet, "en")
+            draft_text = template_proposal_confirmation(sheet, resp_lang)
         else:
             # Deterministic template matching the intent
             if intent_val == Intent.SHIPPING_STATUS:
                 if not extracted_order_id and sheet.orders:
-                    draft_text = template_orders_list(sheet, "en")
+                    draft_text = template_orders_list(sheet, resp_lang)
                 else:
-                    draft_text = template_shipping_status(sheet, "en")
+                    draft_text = template_shipping_status(sheet, resp_lang)
             elif intent_val == Intent.ORDER_STATUS:
                 if sheet.orders and not extracted_order_id:
-                    draft_text = template_orders_list(sheet, "en")
+                    draft_text = template_orders_list(sheet, resp_lang)
                 # Prefer shipping info with ETA if available
                 elif sheet.eta_at_ist or sheet.carrier or "in transit" in (sheet.status or ""):
-                    draft_text = template_shipping_status(sheet, "en")
+                    draft_text = template_shipping_status(sheet, resp_lang)
                 else:
-                    draft_text = template_order_status(sheet, "en")
+                    draft_text = template_order_status(sheet, resp_lang)
             elif intent_val in (Intent.REFUND_STATUS, Intent.REFUND_REQUEST):
-                draft_text = template_refund_status(sheet, "en")
+                draft_text = template_refund_status(sheet, resp_lang)
+            elif intent_val == Intent.CANCELLATION:
+                if not extracted_order_id and sheet.orders:
+                    draft_text = template_orders_list(sheet, resp_lang)
+                else:
+                    draft_text = template_cancellation_denied(sheet, resp_lang)
             elif intent_val == Intent.RETURN_REQUEST:
                 if is_return_status_query:
-                    draft_text = template_return_status(sheet, "en")
+                    draft_text = template_return_status(sheet, resp_lang)
                 else:
                     missing_slot_result = next(
                         (
@@ -934,28 +1064,38 @@ class ConversationPipeline:
                         ms = missing_slot_result.data.get("missing_slot") or (
                             missing_slot_result.data.get("missing_slots") or [None]
                         )[0]
-                        oid = extracted_order_id or "your order"
+                        oid = extracted_order_id or ("आपका ऑर्डर" if is_hi else "your order")
                         if ms == "evidence":
                             draft_text = (
-                                f"For order {oid}, damaged items require photo evidence upload "
-                                f"so our team can review your case."
+                                f"ऑर्डर {oid} के लिए, क्षतिग्रस्त आइटम की समीक्षा हेतु कृपया "
+                                "फोटो प्रमाण अपलोड करें।"
+                                if is_hi
+                                else (
+                                    f"For order {oid}, damaged items require photo evidence upload "
+                                    f"so our team can review your case."
+                                )
                             )
                         elif ms == "refund_method":
                             draft_text = (
-                                f"For order {oid}, cash on delivery returns require a "
-                                f"refund payout method choice (store credit or UPI transfer)."
+                                f"ऑर्डर {oid} के लिए, कैश ऑन डिलीवरी रिटर्न हेतु कृपया रिफंड माध्यम "
+                                "चुनें (स्टोर क्रेडिट या UPI)।"
+                                if is_hi
+                                else (
+                                    f"For order {oid}, cash on delivery returns require a "
+                                    f"refund payout method choice (store credit or UPI transfer)."
+                                )
                             )
                         else:
-                            draft_text = template_return_preview(sheet, "en")
+                            draft_text = template_return_preview(sheet, resp_lang)
                     else:
-                        draft_text = template_return_preview(sheet, "en")
+                        draft_text = template_return_preview(sheet, resp_lang)
             elif intent_val == Intent.POLICY_QUESTION:
-                draft_text = template_policy_summary(sheet, "en")
+                draft_text = template_policy_summary(sheet, resp_lang)
             else:
-                draft_text = guided_mode_menu(sheet, "en")
+                draft_text = guided_mode_menu(sheet, resp_lang)
 
         # Verify draft against FactSheet
-        verification_result = verify(draft_text, sheet, "en")
+        verification_result = verify(draft_text, sheet, resp_lang)
         if not verification_result.ok:
             logger.warning(
                 "Verifier violation in draft, falling back to template",
@@ -980,20 +1120,25 @@ class ConversationPipeline:
 
             # Fall back directly to safe template
             if order_not_found_detected:
-                verified_text = not_found(sheet, "en")
+                verified_text = not_found(sheet, resp_lang)
             elif has_confirmation:
-                verified_text = template_proposal_confirmation(sheet, "en")
+                verified_text = template_proposal_confirmation(sheet, resp_lang)
             elif intent_val in (Intent.ORDER_STATUS, Intent.SHIPPING_STATUS):
                 if not extracted_order_id and sheet.orders:
-                    verified_text = template_orders_list(sheet, "en")
+                    verified_text = template_orders_list(sheet, resp_lang)
                 else:
-                    verified_text = template_shipping_status(sheet, "en")
+                    verified_text = template_shipping_status(sheet, resp_lang)
             elif intent_val in (Intent.REFUND_STATUS, Intent.REFUND_REQUEST):
-                verified_text = template_refund_status(sheet, "en")
+                verified_text = template_refund_status(sheet, resp_lang)
+            elif intent_val == Intent.CANCELLATION:
+                if not extracted_order_id and sheet.orders:
+                    verified_text = template_orders_list(sheet, resp_lang)
+                else:
+                    verified_text = template_cancellation_denied(sheet, resp_lang)
             elif intent_val == Intent.RETURN_REQUEST and is_return_status_query:
-                verified_text = template_return_status(sheet, "en")
+                verified_text = template_return_status(sheet, resp_lang)
             else:
-                verified_text = template_policy_summary(sheet, "en")
+                verified_text = template_policy_summary(sheet, resp_lang)
         else:
             verified_text = draft_text
 
@@ -1034,6 +1179,7 @@ class ConversationPipeline:
             yield ("message.delta", {"delta": chunk})
             await asyncio.sleep(0.01)
 
+        suppress_generic_orders = bool(sheet.refunds or sheet.returns)
         # Build cards
         for r in tool_results:
             if r.ok and isinstance(r.data, dict):
@@ -1050,12 +1196,16 @@ class ConversationPipeline:
                     cards_to_emit.append(build_shipment_timeline_card(r.data))
                 elif "total_paise" in r.data and "items" in r.data:
                     cards_to_emit.append(build_order_summary_card(r.data))
-                elif "orders" in r.data and isinstance(r.data["orders"], list):
+                elif (
+                    "orders" in r.data
+                    and isinstance(r.data["orders"], list)
+                    and not suppress_generic_orders
+                ):
                     for o in r.data["orders"][:3]:
                         if isinstance(o, dict) and "order_id" in o:
                             cards_to_emit.append(build_order_summary_card(o))
 
-        if not extracted_order_id and sheet.orders:
+        if not extracted_order_id and sheet.orders and not suppress_generic_orders:
             order_chips = [
                 {
                     "label": str(o.get("order_id", "")),

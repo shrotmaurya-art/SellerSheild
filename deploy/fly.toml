@@ -1,0 +1,46 @@
+app = "sellershield-ai"
+primary_region = "iad"
+
+[build]
+  dockerfile = "deploy/Dockerfile"
+
+[env]
+  PORT = "8080"
+  DEMO_MODE = "true"
+  DEV_MODE = "false"
+  STORE_MODE = "http"
+  STORE_BASE_URL = "http://127.0.0.1:8000"
+  STORE_JWKS_URL = "http://127.0.0.1:8000/.well-known/jwks.json"
+  AGENT_WEBHOOK_URL = "http://127.0.0.1:8001/v1/webhooks/store"
+  DATABASE_URL = "sqlite:////app/agent/data/agent.db"
+  JWT_ISSUER = "nestkart-store"
+  JWT_PRIVATE_KEY_PATH = "/app/store-api/keys/jwt_private.pem"
+  JWT_PUBLIC_KEY_PATH = "/app/store-api/keys/jwt_public.pem"
+  STORE_EXECUTOR_CLIENT_ID = "agent-executor"
+  STORE_MONITOR_CLIENT_ID = "agent-monitor"
+  LLM_PRIMARY_MODEL = "gemini-2.5-flash"
+  LLM_PRIMARY_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+  LLM_TIMEOUT_S = "15"
+  LLM_CACHE_MODE = "off"
+  PROMPT_VERSION = "v1"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "15s"
+  method = "GET"
+  timeout = "5s"
+  path = "/healthz"
+

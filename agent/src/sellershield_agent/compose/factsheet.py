@@ -167,7 +167,14 @@ def build_factsheet(
         _extract_amounts_recursive(data, amounts_paise)
         _extract_dates_recursive(data, dates)
 
-        if "order_id" in data and isinstance(data["order_id"], str):
+        empty_multi_probe = bool(
+            orders_list
+            and (
+                ("refunds" in data and data.get("refunds") == [])
+                or ("returns" in data and data.get("returns") == [])
+            )
+        )
+        if "order_id" in data and isinstance(data["order_id"], str) and not empty_multi_probe:
             order_id = data["order_id"]
         if "carrier" in data and isinstance(data["carrier"], str):
             carrier = data["carrier"]

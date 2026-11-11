@@ -20,38 +20,50 @@ from sellershield_agent.understand.schema import (
 ORD_REGEX = re.compile(r"\bORD-\d+\b", re.IGNORECASE)
 ORD_CANONICAL_REGEX = re.compile(r"\bORD-\d{3,6}\b", re.IGNORECASE)
 ORD_FLEXIBLE_REGEX = re.compile(
-    r"\b(?:ORD|order|ordr|odr)\s*(?:-|#|\s)\s*(\d{3,6})\b", re.IGNORECASE
+    r"\b(?:ORD|order|ordr|odr)\s*(?:-|#|:|\s)\s*(\d{3,6})\b", re.IGNORECASE
 )
+ORD_HINDI_REGEX = re.compile(r"(?:^|[\s,(])(?:ऑर्डर|आर्डर)\s*(?:-|#|:|\s)\s*(\d{3,6})\b")
 DEVANAGARI_REGEX = re.compile(r"[\u0900-\u097F]")
+_DEVANAGARI_DIGITS_MAP = str.maketrans("०१२३४५६७८९", "0123456789")
 
 
 def normalize_order_id(raw: str | None) -> str | None:
-    """Normalize order ID variants (e.g. '1070', 'ord 1070', 'ORD-1070') to canonical 'ORD-XXXX'."""
+    """Normalize order ID variants (e.g. '1070', 'ord 1070', 'ORD-१०४८') to canonical 'ORD-XXXX'."""
     if not raw or not isinstance(raw, str):
         return None
-    cleaned = raw.strip().upper()
+    cleaned = raw.translate(_DEVANAGARI_DIGITS_MAP).strip().upper()
     if re.match(r"^ORD-\d{3,6}$", cleaned):
         return cleaned
     if re.match(r"^\d{3,6}$", cleaned):
         return f"ORD-{cleaned}"
-    m = re.match(r"^(?:ORD|ORDER|ORDR|ODR)\s*(?:-|#|\s)\s*(\d{3,6})$", cleaned, re.IGNORECASE)
+    m = re.match(
+        r"^(?:ORD|ORDER|ORDR|ODR|ऑर्डर|आर्डर)\s*(?:-|#|:|\s)\s*(\d{3,6})$",
+        cleaned,
+        re.IGNORECASE,
+    )
     if m:
         return f"ORD-{m.group(1)}"
     return None
 
 
 def extract_order_ids(text: str) -> list[str]:
-    """Extract and normalize all order IDs found in text."""
+    """Extract and normalize all order IDs found in text (including Devanagari digits)."""
     if not text:
         return []
+    norm_text = text.translate(_DEVANAGARI_DIGITS_MAP)
     results: list[str] = []
     # 1. Canonical ORD-XXXX
-    for match in ORD_CANONICAL_REGEX.findall(text):
+    for match in ORD_CANONICAL_REGEX.findall(norm_text):
         norm = match.upper()
         if norm not in results:
             results.append(norm)
-    # 2. Flexible variants: "ord 1070", "order #1070", "order-1070"
-    for match in ORD_FLEXIBLE_REGEX.finditer(text):
+    # 2. Flexible variants: "ord 1070", "order #1070", "order-1070", "ऑर्डर 1048"
+    for match in ORD_FLEXIBLE_REGEX.finditer(norm_text):
+        digits = match.group(1)
+        norm = f"ORD-{digits}"
+        if norm not in results:
+            results.append(norm)
+    for match in ORD_HINDI_REGEX.finditer(norm_text):
         digits = match.group(1)
         norm = f"ORD-{digits}"
         if norm not in results:
@@ -61,52 +73,128 @@ def extract_order_ids(text: str) -> list[str]:
 HINGLISH_WORDS = {
     "kab",
     "kahan",
+    "kaha",
+    "kidhar",
     "mera",
     "meri",
     "mere",
+    "mujhe",
+    "humara",
+    "aapka",
     "aayega",
+    "aayegi",
     "pahuncha",
+    "pahunchega",
     "hai",
     "hain",
+    "tha",
+    "thi",
+    "hua",
+    "hui",
     "wapas",
+    "vapas",
+    "vaapas",
+    "wapis",
+    "vapis",
+    "kar",
     "karo",
     "kardo",
     "karna",
+    "karni",
+    "kariye",
+    "kijiye",
     "chahiye",
+    "chahie",
     "nahi",
+    "nhi",
+    "mat",
+    "haan",
+    "hanji",
     "toota",
+    "tuta",
     "kharab",
     "paise",
     "paisa",
+    "rupaye",
     "bhai",
     "bhaiya",
     "samaan",
+    "saman",
     "galat",
     "alag",
     "kripya",
     "kya",
     "kaise",
+    "kyu",
+    "kyun",
     "ho",
     "aap",
     "tumhari",
     "chor",
     "bakwas",
     "kitne",
+    "kitna",
     "din",
+    "tak",
+    "abhi",
+    "jaldi",
     "me",
     "mein",
     "bhejo",
     "bhej",
+    "bhejna",
     "diya",
     "baat",
-    "karni",
+    "karao",
     "se",
     "nikla",
+    "nikli",
+    "milega",
+    "milegi",
+    "mila",
+    "mili",
+    "radd",
+    "pasand",
+    "dikhao",
+    "dikhaye",
+    "batao",
+    "bataiye",
+    "batana",
+    "sab",
+    "sabhi",
+    "saare",
+    "sare",
+    "ek",
+    "teen",
+    "chaar",
+    "paanch",
     "ka",
     "ki",
     "ke",
     "kisi",
     "bot",
+    "parcel",
+    "krdo",
+    "karde",
+    "krna",
+    "dikhado",
+    "dikha",
+    "bata",
+    "batayiye",
+    "milenge",
+    "milengi",
+    "aayenge",
+    "aaye",
+    "pahunchi",
+    "pahunche",
+    "pahunchegi",
+    "rad",
+    "madad",
+    "apna",
+    "apne",
+    "kharaab",
+    "sahayata",
+    "karke",
 }
 
 ABUSE_WORDS = {
@@ -135,7 +223,13 @@ HUMAN_PHRASES = [
     r"\bexecutive\b",
     r"\btalk\s+to\s+(?:a\s+)?(?:human|person|agent|manager|someone)\b",
     r"\bspeak\s+to\s+(?:a\s+)?(?:human|person|agent|manager|someone)\b",
-    r"\bbaat\s+karao\b",
+    r"\bbaat\s+(?:karao|karna|karni)\b",
+    r"इंसान",
+    r"व्यक्ति",
+    r"एजेंट",
+    r"मैनेजर",
+    r"कस्टमर\s*केयर",
+    r"बात\s*(?:करनी|करा)",
 ]
 
 SHIPPING_PHRASES = [
@@ -144,7 +238,10 @@ SHIPPING_PHRASES = [
     r"\bshipment\b",
     r"\bcourier\b",
     r"\bin\s+transit\b",
-    r"\bkahan\s+tak\s+pahuncha\b",
+    r"\bkahan\s+tak\s+(?:pahuncha|aaya)\b",
+    r"ट्रैक",
+    r"शिपमेंट",
+    r"कूरियर",
 ]
 
 POLICY_PHRASES = [
@@ -155,12 +252,17 @@ POLICY_PHRASES = [
     r"\b(?:return|refund|store|cancellation)\s+rules?\b",
     r"\brules?\s+(?:for|of)\b",
     r"\bwhat\s+(?:are\s+the|is\s+the)\s+rules?\b",
+    r"नीति",
+    r"पॉलिसी",
+    r"नियम",
 ]
 
 SMALL_TALK_WORDS = [
-    r"^(?:hi|hello|hey|namaste|good\s+morning|good\s+afternoon|good\s+evening)\b",
+    r"^(?:hi|hello|hey|namaste|good\s+morning|good\s+afternoon|good\s+evening|नमस्ते|नमस्कार)(?:\b|[\s,!।?]|$)",
     r"\bkaise\s+ho\b",
     r"\bhow\s+are\s+you\b",
+    r"कैसे\s+हो",
+    r"कैसे\s+हैं",
 ]
 
 OFF_TOPIC_WORDS = [
@@ -177,15 +279,24 @@ ORDER_STATUS_PHRASES = [
     r"\bwhere\s+is\b",
     r"\bwher\s+is\b",
     r"\border\s+status\b",
-    r"\bkab\s+aayega\b",
+    r"\bkab\s+(?:aayega|aayegi|aayenge|pahunchega|pahunchegi|tak|milega)\b",
+    r"\b(?:kahan|kaha)\s+(?:hai|pahuncha|pahunchi|pahunche|tak)\b",
+    r"\bkidhar\s+hai\b",
     r"\bdelivery\b",
     r"\barrive\b",
     r"\blate\b",
     r"\blayte\b",
     r"\bordr\b",
     r"\bstatus\b",
-    r"\b(?:list|show|get|all|my)\b.*\b(?:order|orders|product|products|item|items)\b",
+    r"\b(?:list|show|get|all|my|mere|sabhi|saare|sare|sab)\b.*\b(?:order|orders|product|products|item|items)\b",
     r"\b(?:orders|products)\b",
+    r"ऑर्डर",
+    r"पार्सल",
+    r"कहाँ",
+    r"कब\s+आएगा",
+    r"डिलीवरी",
+    r"स्टेटस",
+    r"स्थिति",
 ]
 
 
@@ -235,10 +346,35 @@ class DeterministicRouter:
             hinglish_overlap = words & HINGLISH_WORDS
             hinglish_phrases = [
                 "kab aayega",
+                "kab aayegi",
+                "kab aayenge",
+                "kab tak",
                 "wapas karo",
+                "wapas karna",
+                "wapas aayenge",
+                "vapas karo",
                 "kahan tak",
+                "kahan hai",
+                "kaha hai",
                 "toota hua",
+                "tuta hua",
                 "paisa wapas",
+                "paise wapas",
+                "paise kab",
+                "paisa kab",
+                "cancel kardo",
+                "cancel krdo",
+                "cancel karna",
+                "cancel karo",
+                "kab milega",
+                "kab milenge",
+                "bata do",
+                "mere orders",
+                "sabhi orders",
+                "orders dikhao",
+                "order dikhao",
+                "baat karao",
+                "policy kya",
             ]
             if len(hinglish_overlap) >= 2 or any(p in lower_text for p in hinglish_phrases):
                 language = Language.HINGLISH
@@ -260,23 +396,37 @@ class DeterministicRouter:
 
         # 5. Reason Code & Text Extraction
         reason_code = ReasonCode.OTHER
-        if any(w in lower_text for w in ["defective", "not working", "kharab", "faulty"]):
+        if any(
+            w in lower_text
+            for w in ["defective", "not working", "kharab", "faulty", "खराब", "काम नहीं"]
+        ):
             reason_code = ReasonCode.DEFECTIVE
-        elif any(w in lower_text for w in ["damaged", "toota", "broken", "cracked", "shattered"]):
+        elif any(
+            w in lower_text
+            for w in ["damaged", "toota", "tuta", "broken", "cracked", "shattered", "टूटा", "फूटा"]
+        ):
             reason_code = ReasonCode.DAMAGED
-        elif any(w in lower_text for w in ["wrong", "galat", "incorrect"]):
+        elif any(w in lower_text for w in ["wrong", "galat", "incorrect", "गलत"]):
             reason_code = ReasonCode.WRONG_ITEM
         elif any(w in lower_text for w in ["not as described", "different from picture"]):
             reason_code = ReasonCode.NOT_AS_DESCRIBED
         elif any(
             w in lower_text
-            for w in ["changed mind", "nahi chahiye", "wrong model", "ordered wrong"]
+            for w in [
+                "changed mind",
+                "nahi chahiye",
+                "pasand nahi",
+                "wrong model",
+                "ordered wrong",
+                "नहीं चाहिए",
+                "मन बदल",
+            ]
         ):
             reason_code = ReasonCode.CHANGED_MIND
         elif any(
             re.search(rf"\b{re.escape(w)}\b", lower_text)
             for w in ["late", "delayed", "der", "layte"]
-        ):
+        ) or any(w in lower_text for w in ["देर", "देरी"]):
             reason_code = ReasonCode.LATE
 
         reason_text = text[:200] if reason_code != ReasonCode.OTHER else ""
@@ -369,11 +519,28 @@ class DeterministicRouter:
 
         # Legal threat / Human agent request
         if has_legal_keyword or has_human_phrase:
-            if not any(k in lower_text for k in ["cancel", "return", "refund", "track", "status"]):
+            if not any(
+                k in lower_text
+                for k in [
+                    "cancel",
+                    "return",
+                    "refund",
+                    "track",
+                    "status",
+                    "रद्द",
+                    "कैंसल",
+                    "रिटर्न",
+                    "रिफंड",
+                    "ट्रैक",
+                ]
+            ):
                 return Intent.HUMAN_REQUEST
 
         # Cancellation
-        if any(w in lower_text for w in ["cancel", "cancellation", "cancel kardo"]):
+        if re.search(
+            r"\bcancel(?:l?(?:ation|ed|ing)?|kardo|krdo|karna|karo)\b|\bradd\b|\brad\s+kar",
+            lower_text,
+        ) or any(w in lower_text for w in ["रद्द", "कैंसल", "कैंसलेशन", "निरस्त"]):
             return Intent.CANCELLATION
 
         # Policy question (check before generic return)
@@ -383,37 +550,63 @@ class DeterministicRouter:
         ):
             return Intent.POLICY_QUESTION
 
-        # Return request vs Damaged/Wrong item
-        has_return = any(
-            w in lower_text for w in ["return", "wapas", "replace", "send back", "exchange"]
-        )
-        if (
-            has_return
-            or (order_ids and reason_code in (ReasonCode.DAMAGED, ReasonCode.DEFECTIVE))
-            or (
-                order_ids
-                and any(
-                    w in lower_text
-                    for w in [
-                        "damaged",
-                        "kharab",
-                        "defective",
-                        "broken",
-                        "toota",
-                        "cracked",
-                        "shattered",
-                    ]
-                )
+        # Refund status vs Refund request (check before return for paisa/returned-order refunds)
+        has_refund = bool(
+            re.search(
+                r"\brefund\b|\b(?:paisa|paise)\b.*\b(?:wapas|vapas|vaapas|wapis|vapis|milega|milegi|milenge|aaya|aayega|aayegi|aayenge)\b",
+                lower_text,
             )
-        ):
-            return Intent.RETURN_REQUEST
-
-        # Refund status vs Refund request
-        has_refund = any(k in lower_text for k in ["refund", "paisa wapas", "paise wapas"])
-        if has_refund:
-            status_tokens = ["when will", "status", "credited", "kab milega", "where is my refund"]
+        ) or any(w in lower_text for w in ["रिफंड", "पैसा वापस", "पैसे वापस", "पैसे कब"])
+        has_active_item_return = bool(
+            re.search(
+                r"\b(?:replace|exchange|send\s+back)\b|\b(?:samaan|saman|item|product|kurta)\s+(?:wapas|vapas|vaapas|wapis|return)\b|\breturn\b(?!ed\b)",
+                lower_text,
+            )
+        ) or any(w in lower_text for w in ["सामान वापस", "समान वापस", "रिटर्न करना", "बदलना"])
+        if has_refund and not has_active_item_return:
+            status_tokens = [
+                "when will",
+                "status",
+                "credited",
+                "kab milega",
+                "kab milenge",
+                "kab aayega",
+                "kab aayenge",
+                "kab tak",
+                "where is",
+                "what happened",
+                "kahan",
+                "kaha",
+                "kidhar",
+                "milega",
+                "milenge",
+                "aayenge",
+                "pahuncha",
+                "pahunchi",
+                "pahunche",
+                "kya hai",
+                "aaya kya",
+                "स्थिति",
+                "स्टेटस",
+                "कब",
+                "कहाँ",
+                "पहुँचा",
+            ]
             if any(w in lower_text for w in status_tokens):
                 return Intent.REFUND_STATUS
+            return Intent.REFUND_REQUEST
+
+        # Return request vs Damaged/Wrong item
+        has_return = bool(
+            re.search(
+                r"\b(?:return(?:ing|ed)?|wapas|vapas|vaapas|wapis|replace|send\s+back|exchange)\b",
+                lower_text,
+            )
+        ) or any(w in lower_text for w in ["रिटर्न", "वापस", "लौटाना", "वापसी", "एक्सचेंज"])
+        if has_return:
+            return Intent.RETURN_REQUEST
+
+        if has_refund:
             return Intent.REFUND_REQUEST
 
         # If reported damaged or cracked without explicit return keyword

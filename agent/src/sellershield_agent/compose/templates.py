@@ -190,7 +190,14 @@ def refund_status(sheet: FactSheet, lang: str = "en") -> str:
     status_label = "pending"
 
     if sheet.refunds:
-        r0 = sheet.refunds[0]
+        r0 = next(
+            (
+                r
+                for r in sheet.refunds
+                if str(r.get("status", "")) in ("reserved", "processing", "completed")
+            ),
+            sheet.refunds[0],
+        )
         rfd_id = r0.get("refund_id", "")
         oid = str(r0.get("order_id") or oid)
         if "amount_paise" in r0 and isinstance(r0["amount_paise"], int):
@@ -209,6 +216,10 @@ def refund_status(sheet: FactSheet, lang: str = "en") -> str:
             rfd_id = rfd_candidates[0]
 
     if not sheet.refunds and not rfd_id:
+        if sheet.orders and not sheet.order_id:
+            if is_hi:
+                return "आपके हाल के ऑर्डर में कोई सक्रिय रिफंड नहीं मिला।"
+            return "No active refunds were found across your recent orders."
         if is_hi:
             return f"ऑर्डर {oid} के लिए कोई सक्रिय रिफंड नहीं मिला।"
         return f"No active refund found for order {oid}."
@@ -237,6 +248,10 @@ def return_status(sheet: FactSheet, lang: str = "en") -> str:
     oid_opt = sheet.order_id or (ord_candidates[0] if ord_candidates else None)
 
     if not sheet.returns:
+        if sheet.orders and not sheet.order_id:
+            if is_hi:
+                return "आपके हाल के ऑर्डर में कोई सक्रिय रिटर्न अनुरोध नहीं मिला।"
+            return "No active return requests were found across your recent orders."
         if is_hi:
             if oid_opt:
                 return f"ऑर्डर {oid_opt} के लिए कोई रिटर्न अनुरोध नहीं मिला।"
@@ -346,3 +361,29 @@ def proposal_confirmation(sheet: FactSheet, lang: str = "en") -> str:
         f"Proposal {pid} for order {oid} ({amt_str}) is ready—please "
         "confirm or cancel using the card below."
     )
+
+
+def cancellation_denied(sheet: FactSheet, lang: str = "en") -> str:
+    """Deterministic verifier-safe template when cancellation is not eligible."""
+    is_hi = lang.lower().startswith("hi")
+    oid = sheet.order_id or (next(iter(sheet.allowed_ids)) if sheet.allowed_ids else "ORD-000")
+    status_val = sheet.status or ""
+    if status_val == "cancelled" and "cancelled" in sheet.supported_claims:
+        if is_hi:
+            return f"ऑर्डर {oid} पहले से रद्द किया जा चुका है।"
+        return f"Order {oid} is already cancelled."
+    if (
+        status_val in ("shipped", "in_transit", "out_for_delivery", "delivered")
+        and "shipped" in sheet.supported_claims
+    ):
+        if is_hi:
+            return (
+                f"ऑर्डर {oid} पहले ही भेजा जा चुका है, इसलिए अब रद्दीकरण (कैंसिलेशन) उपलब्ध नहीं है।"
+            )
+        return (
+            f"Order {oid} has already shipped, so it is not eligible for cancellation. "
+            "Once delivered, return options may apply."
+        )
+    if is_hi:
+        return f"ऑर्डर {oid} अभी रद्दीकरण के लिए पात्र नहीं है।"
+    return f"Order {oid} is not eligible for cancellation."

@@ -157,14 +157,16 @@ def record_stale_and_preview_sync(
             and reval.live_facts is not None
             and reval.live_decision is not None
         ):
-            extra_payload: dict[str, Any] = (
-                {"cause": prepared.cause or "lost"}
-                if prepared.proposal_type == "refund"
-                else {
+            extra_payload: dict[str, Any]
+            if prepared.proposal_type == "refund":
+                extra_payload = {"cause": prepared.cause or "lost"}
+            elif prepared.proposal_type == "cancel":
+                extra_payload = {"reason_code": prepared.reason_code}
+            else:
+                extra_payload = {
                     "reason_code": prepared.reason_code,
                     "evidence_ids": list(prepared.evidence_ids),
                 }
-            )
             card_payload, new_pid, rate_limited = persist_proposal_and_build_card(
                 engine,
                 clock=spec.clock,

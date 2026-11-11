@@ -52,6 +52,7 @@ def _emit_client_event_in_tx(
     approval_id: str | None,
     message_key: str,
     now_iso: str,
+    proposal_type: str | None = None,
 ) -> None:
     existing = tx.execute(
         select(client_events.c.payload_json).where(
@@ -76,6 +77,7 @@ def _emit_client_event_in_tx(
         message_key=message_key,
         return_id=return_id,
         approval_id=approval_id,
+        proposal_type=proposal_type,
     )
     payload: dict[str, Any] = {
         "proposal_id": proposal_id,
@@ -117,7 +119,7 @@ def finalize_approval_sync(
     *,
     plan: SagaPlan,
     return_id: str | None,
-    refund_id: str,
+    refund_id: str | None,
     clock: Clock,
     request_id: str,
     actor_type: ActorType | str,
@@ -174,6 +176,7 @@ def finalize_approval_sync(
                 approval_id=approval_id,
                 message_key="proposal.pending_approval",
                 now_iso=now_iso,
+                proposal_type=plan.proposal_type,
             )
             return approval_id
 
@@ -247,6 +250,7 @@ def finalize_approval_sync(
             approval_id=approval_id,
             message_key="proposal.pending_approval",
             now_iso=now_iso,
+            proposal_type=plan.proposal_type,
         )
 
         enqueue_outbox_in_tx(
@@ -350,6 +354,7 @@ def finalize_proposal_sync(
                 approval_id=result.approval_id,
                 message_key=msg_key,
                 now_iso=now_iso,
+                proposal_type=plan.proposal_type,
             )
 
         if result.status in ("succeeded", "failed"):

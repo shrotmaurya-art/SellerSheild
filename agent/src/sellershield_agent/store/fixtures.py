@@ -947,6 +947,49 @@ class FixtureStoreClient(StoreClient):
         refunds = await self.list_refunds(service_ctx, order_id)
         return order.model_copy(update={"returns": returns, "refunds": refunds})
 
+    async def cancel_order(
+        self,
+        ctx: RequestContext,
+        order_id: str,
+        reason: str,
+        idempotency_key: str,
+    ) -> Order:
+        self._validate_order_id(order_id)
+        if ctx.principal.role == Role.customer:
+            raise StoreForbidden("Customer token cannot cancel orders directly")
+
+        await self._check_fault_before("cancel_order")
+
+        payload_key = f"cancel_order:{order_id}:{reason}"
+        async with self._lock:
+            cached = self._check_idempotency(idempotency_key, payload_key)
+            if isinstance(cached, Order):
+                return cached
+
+            raw_order = next(
+                (o for o in self._raw_data.get("orders", []) if o.get("order_id") == order_id),
+                None,
+            )
+            if raw_order is None:
+                raise StoreNotFound(f"Order '{order_id}' not found")
+
+            curr_status = str(raw_order.get("status", ""))
+            if curr_status not in ("placed", "packed", "confirmed"):
+                raise StoreInvalidState(
+                    f"Order {order_id} in state '{curr_status}' cannot be cancelled; "
+                    "only before shipped"
+                )
+
+            now = self._clock.now()
+            raw_order["status"] = "cancelled"
+            raw_order["cancelled_at_offset"] = now.isoformat()
+            raw_order["version"] = int(raw_order.get("version", 1)) + 1
+
+            order_obj = self._build_order(raw_order, self._clock.now())
+            self._idempotency_records[idempotency_key] = (payload_key, order_obj)
+            self._check_fault_after_commit("cancel_order")
+            return order_obj
+
     async def get_settings(self, service_ctx: RequestContext) -> StoreSettings:
         if service_ctx.principal.role == Role.customer:
             raise StoreForbidden("Store settings view requires service or seller role")

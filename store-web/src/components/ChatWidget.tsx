@@ -16,7 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { getAccessToken } from "../api/client";
+import { authFetch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useChatStream } from "../hooks/useChatStream";
 import {
@@ -26,6 +26,65 @@ import {
   ReturnPreviewCard,
   ShipmentTimelineCard,
 } from "./chat/cards";
+
+export interface ConfirmResponseShape {
+  proposal_id?: string;
+  status?: string;
+  return_id?: string | null;
+  refund_id?: string | null;
+  approval_id?: string | null;
+  execution_id?: string | null;
+  message?: string;
+}
+
+export function formatConfirmProposalMessage(
+  proposalType: string,
+  orderId: string,
+  confData: ConfirmResponseShape,
+): string {
+  const status = String(confData.status || "").toLowerCase();
+  const isCancel = proposalType === "cancel";
+  const actionNoun = isCancel ? "cancellation" : "return";
+  const orderLabel = orderId ? ` for order **${orderId}**` : "";
+
+  if (status === "pending_approval") {
+    const parts = [
+      `Your ${actionNoun} request${orderLabel} has been submitted for seller review`,
+    ];
+    if (confData.approval_id) {
+      parts.push(`(**Approval ID: ${confData.approval_id}**`);
+      if (confData.return_id) {
+        parts[parts.length - 1] += `, **Return ID: ${confData.return_id}**)`;
+      } else {
+        parts[parts.length - 1] += ")";
+      }
+    }
+    return `${parts.join(" ")}. We will notify you once the seller responds.`;
+  }
+
+  if (status === "succeeded") {
+    if (isCancel) {
+      const execSuffix = confData.execution_id ? ` (**Execution ID: ${confData.execution_id}**)` : "";
+      return `Order **${orderId || "your order"}** has been **cancelled** successfully${execSuffix}. A confirmation email has been dispatched to your Inbox.`;
+    }
+    if (confData.return_id) {
+      return `Your return request has been confirmed! **Return ID: ${confData.return_id}** has been registered in the store and a confirmation email has been dispatched to your Inbox.`;
+    }
+    return confData.message || `Your ${actionNoun} request${orderLabel} has been confirmed and completed.`;
+  }
+
+  if (status === "unknown" || status === "executing") {
+    return (
+      confData.message ||
+      `Your ${actionNoun} request${orderLabel} is still being verified by the store. Please check your Orders page or Inbox shortly.`
+    );
+  }
+
+  return (
+    confData.message ||
+    `Could not complete ${actionNoun}${orderLabel}. Please verify your order status and try again.`
+  );
+}
 
 export function ChatWidget() {
   const navigate = useNavigate();
@@ -237,31 +296,48 @@ export function ChatWidget() {
                 {msg.sender === "assistant" && msg.cards && msg.cards.length > 0 && (
                   <div className="mt-2 max-w-[95%] space-y-2">
                     {msg.cards.map((card, idx) => {
-                      const cardType = (card.card_type || card.type) as string;
-                      const p = (card.payload || card) as Record<string, any>;
+                      type CardRecord = Record<string, unknown>;
+                      const asStr = (v: unknown, fb = ""): string => (typeof v === "string" ? v : fb);
+                      const asNum = (v: unknown, fb = 0): number => (typeof v === "number" ? v : fb);
+                      const cardType = asStr(card.card_type) || asStr(card.type);
+                      const p = ((card.payload as CardRecord | undefined) || card) as CardRecord;
 
                       if (cardType === "order_summary") {
                         return (
                           <OrderSummaryCard
                             key={idx}
-                            orderId={p.orderId || p.order_id || ""}
-                            status={p.status || ""}
-                            placedAt={p.placedAt || p.created_at || ""}
+                            orderId={asStr(p.orderId) || asStr(p.order_id)}
+                            status={asStr(p.status)}
+                            placedAt={asStr(p.placedAt) || asStr(p.created_at)}
                             items={
                               Array.isArray(p.items)
-                                ? p.items.map((it: any) => ({
-                                  itemId: it.itemId || it.item_id || "",
-                                  name: it.name || it.title || "Item",
-                                  qty: it.qty || it.quantity || 1,
-                                  linePaidPaise: it.linePaidPaise ?? it.price_paise ?? 0,
-                                  sku: it.sku || "",
-                                }))
+                                ? p.items.map((rawIt) => {
+                                  const it = rawIt as CardRecord;
+                                  return {
+                                    itemId: asStr(it.itemId) || asStr(it.item_id),
+                                    name: asStr(it.name) || asStr(it.title) || "Item",
+                                    qty: asNum(it.qty) || asNum(it.quantity, 1),
+                                    linePaidPaise:
+                                      typeof it.linePaidPaise === "number"
+                                        ? it.linePaidPaise
+                                        : asNum(it.price_paise, 0),
+                                    sku: asStr(it.sku),
+                                  };
+                                })
                                 : []
                             }
-                            subtotalPaise={p.subtotalPaise ?? p.total_paise ?? 0}
-                            discountPaise={p.discountPaise ?? 0}
-                            shippingFeePaise={p.shippingFeePaise ?? 0}
-                            totalPaise={p.totalPaise ?? p.total_paise ?? 0}
+                            subtotalPaise={
+                              typeof p.subtotalPaise === "number"
+                                ? p.subtotalPaise
+                                : asNum(p.total_paise, 0)
+                            }
+                            discountPaise={asNum(p.discountPaise, 0)}
+                            shippingFeePaise={asNum(p.shippingFeePaise, 0)}
+                            totalPaise={
+                              typeof p.totalPaise === "number"
+                                ? p.totalPaise
+                                : asNum(p.total_paise, 0)
+                            }
                             onViewOrder={(oid) => {
                               setIsOpen(false);
                               navigate(`/orders/${oid}`);
@@ -275,20 +351,32 @@ export function ChatWidget() {
                         return (
                           <ShipmentTimelineCard
                             key={idx}
-                            orderId={p.orderId || p.order_id || ""}
-                            carrier={p.carrier || "Courier"}
-                            trackingNo={p.trackingNo || p.tracking_no || ""}
-                            etaAt={p.etaAt || p.eta || null}
+                            orderId={asStr(p.orderId) || asStr(p.order_id)}
+                            carrier={asStr(p.carrier, "Courier")}
+                            trackingNo={asStr(p.trackingNo) || asStr(p.tracking_no)}
+                            etaAt={
+                              typeof p.etaAt === "string"
+                                ? p.etaAt
+                                : typeof p.eta === "string"
+                                  ? p.eta
+                                  : null
+                            }
                             delayed={Boolean(p.delayed)}
                             events={
                               Array.isArray(rawEv)
-                                ? rawEv.map((ev: any, i: number) => ({
-                                  eventId: ev.eventId || ev.id || `ev-${i}`,
-                                  ts: ev.ts || ev.timestamp || ev.occurred_at || "",
-                                  status: ev.status || "",
-                                  location: ev.location || "",
-                                  note: ev.note || ev.description || "",
-                                }))
+                                ? rawEv.map((rawItem, i: number) => {
+                                  const ev = rawItem as CardRecord;
+                                  return {
+                                    eventId: asStr(ev.eventId) || asStr(ev.id) || `ev-${i}`,
+                                    ts:
+                                      asStr(ev.ts) ||
+                                      asStr(ev.timestamp) ||
+                                      asStr(ev.occurred_at),
+                                    status: asStr(ev.status),
+                                    location: asStr(ev.location),
+                                    note: asStr(ev.note) || asStr(ev.description),
+                                  };
+                                })
                                 : []
                             }
                           />
@@ -299,48 +387,65 @@ export function ChatWidget() {
                         return (
                           <ReturnPreviewCard
                             key={idx}
-                            orderId={p.orderId || p.order_id || ""}
+                            orderId={asStr(p.orderId) || asStr(p.order_id)}
                             items={
                               Array.isArray(p.items)
-                                ? p.items.map((it: any) => ({
-                                  name: it.name || it.title || "Item",
-                                  qty: it.qty || it.quantity || 1,
-                                  linePaidPaise: it.linePaidPaise || it.price_paise || 0,
-                                }))
+                                ? p.items.map((rawIt) => {
+                                  const it = rawIt as CardRecord;
+                                  return {
+                                    name: asStr(it.name) || asStr(it.title) || "Item",
+                                    qty: asNum(it.qty) || asNum(it.quantity, 1),
+                                    linePaidPaise: asNum(it.linePaidPaise) || asNum(it.price_paise, 0),
+                                  };
+                                })
                                 : []
                             }
-                            reasonCode={p.reasonCode || p.reason_code || "standard_return"}
-                            reasonText={p.reasonText || p.reason_text || "Standard return request"}
-                            resolution={p.resolution || "refund"}
-                            refundAmountPaise={
-                              p.estimatedRefundPaise ?? p.total_refund_paise ?? 0
+                            reasonCode={asStr(p.reasonCode) || asStr(p.reason_code) || "standard_return"}
+                            reasonText={
+                              asStr(p.reasonText) || asStr(p.reason_text) || "Standard return request"
                             }
-                            shippingFeeNote={p.shippingFeeNote || "Free return pickup"}
-                            policyNote={p.policyNote}
+                            resolution={asStr(p.resolution, "refund")}
+                            refundAmountPaise={
+                              typeof p.estimatedRefundPaise === "number"
+                                ? p.estimatedRefundPaise
+                                : asNum(p.total_refund_paise, 0)
+                            }
+                            shippingFeeNote={asStr(p.shippingFeeNote, "Free return pickup")}
+                            policyNote={asStr(p.policyNote) || undefined}
                           />
                         );
                       }
 
                       if (cardType === "confirmation") {
-                        const proposalId = p.proposal_id || p.proposalId || "";
-                        const proposalHash = p.proposal_hash || p.proposalHash || "";
+                        const proposalId = asStr(p.proposal_id) || asStr(p.proposalId);
+                        const proposalHash = asStr(p.proposal_hash) || asStr(p.proposalHash);
+                        const proposalType = (
+                          asStr(p.proposal_type) ||
+                          asStr(p.type) ||
+                          "return"
+                        ).toLowerCase();
+                        const orderId = asStr(p.orderId) || asStr(p.order_id);
+                        const amountsObj =
+                          typeof p.amounts === "object" && p.amounts !== null
+                            ? (p.amounts as CardRecord)
+                            : null;
                         const refundPaise =
-                          (typeof p.amounts === "object" && p.amounts !== null
-                            ? (p.amounts.total_paise ?? p.amounts.items_paise)
+                          (amountsObj
+                            ? asNum(amountsObj.total_paise, asNum(amountsObj.items_paise, 0))
                             : null) ??
-                          p.estimatedRefundPaise ??
-                          p.refund_amount_paise ??
-                          0;
+                          (typeof p.estimatedRefundPaise === "number"
+                            ? p.estimatedRefundPaise
+                            : asNum(p.refund_amount_paise, 0));
 
                         const confirmationDetails = Array.isArray(p.details)
-                          ? p.details
+                          ? (p.details as { label: string; value: string }[])
                           : [
                             {
                               label: "Order ID",
-                              value: p.orderId || p.order_id || "",
+                              value: orderId,
                             },
                             {
-                              label: "Estimated Refund",
+                              label: proposalType === "cancel" ? "Order Total" : "Estimated Refund",
                               value: `₹${(Number(refundPaise) / 100).toFixed(2)}`,
                             },
                             ...(Array.isArray(p.items) && p.items.length > 0
@@ -348,10 +453,11 @@ export function ChatWidget() {
                                 {
                                   label: "Items",
                                   value: p.items
-                                    .map(
-                                      (it: any) =>
-                                        `${it.name || "Item"} (×${it.quantity || it.qty || 1})`,
-                                    )
+                                    .map((rawIt) => {
+                                      const it = rawIt as CardRecord;
+                                      const qty = asNum(it.quantity) || asNum(it.qty, 1);
+                                      return `${asStr(it.name, "Item")} (×${qty})`;
+                                    })
                                     .join(", "),
                                 },
                               ]
@@ -362,23 +468,21 @@ export function ChatWidget() {
                           <ConfirmationCard
                             key={idx}
                             title={
-                              p.title ||
-                              `Confirm ${p.type === "cancel" || p.proposal_type === "cancel" ? "Cancellation" : "Return"}`
+                              asStr(p.title) ||
+                              `Confirm ${proposalType === "cancel" ? "Cancellation" : "Return"}`
                             }
                             description={
-                              p.description ||
-                              `Please confirm return for order ${p.orderId || p.order_id || ""}`
+                              asStr(p.description) ||
+                              `Please confirm ${proposalType === "cancel" ? "cancellation" : "return"} for order ${orderId}`
                             }
                             details={confirmationDetails}
-                            expiresAt={p.expiresAt || p.expires_at}
+                            expiresAt={asStr(p.expiresAt) || asStr(p.expires_at) || undefined}
                             onConfirm={async () => {
                               if (!proposalId) return;
-                              const token = getAccessToken();
-                              const res = await fetch(`/agent/v1/proposals/${proposalId}/confirm`, {
+                              const res = await authFetch(`/agent/v1/proposals/${proposalId}/confirm`, {
                                 method: "POST",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
                                   "Idempotency-Key": `web-confirm-${proposalId}-${Date.now()}`,
                                 },
                                 body: JSON.stringify({ proposal_hash: proposalHash }),
@@ -396,24 +500,21 @@ export function ChatWidget() {
                                 throw new Error(errMsg);
                               }
 
-                              const confData = await res.json();
-                              const retId = confData.return_id || "RET-SUCCESS";
+                              const confData = (await res.json()) as ConfirmResponseShape;
                               addMessage({
                                 id: `conf-asst-${Date.now()}`,
                                 sender: "assistant",
-                                text: `Your return request has been confirmed! **Return ID: ${retId}** has been registered in the store and a confirmation email has been dispatched to your Inbox.`,
+                                text: formatConfirmProposalMessage(proposalType, orderId, confData),
                                 timestamp: new Date(),
                               });
                             }}
                             onCancel={async () => {
                               if (proposalId) {
-                                const token = getAccessToken();
                                 try {
-                                  await fetch(`/agent/v1/proposals/${proposalId}/cancel`, {
+                                  await authFetch(`/agent/v1/proposals/${proposalId}/cancel`, {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
-                                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
                                       "Idempotency-Key": `web-cancel-${proposalId}-${Date.now()}`,
                                     },
                                     body: JSON.stringify({}),
@@ -422,10 +523,11 @@ export function ChatWidget() {
                                   // ignore cancel errors
                                 }
                               }
+                              const actionLabel = proposalType === "cancel" ? "Cancellation" : "Return";
                               addMessage({
                                 id: `cancel-asst-${Date.now()}`,
                                 sender: "assistant",
-                                text: `Return proposal for order ${p.orderId || p.order_id || ""} has been cancelled.`,
+                                text: `${actionLabel} proposal for order ${orderId} has been cancelled.`,
                                 timestamp: new Date(),
                               });
                             }}
@@ -437,14 +539,19 @@ export function ChatWidget() {
                         return (
                           <CaseCreatedCard
                             key={idx}
-                            caseId={p.caseId || p.case_id || ""}
-                            orderId={p.orderId || p.order_id}
-                            priority={p.priority || "medium"}
-                            status={p.status || "Open"}
+                            caseId={asStr(p.caseId) || asStr(p.case_id)}
+                            orderId={asStr(p.orderId) || asStr(p.order_id) || undefined}
+                            priority={asStr(p.priority, "medium")}
+                            status={asStr(p.status, "Open")}
                             subject={
-                              p.subject || p.summary || p.category || "Support Case"
+                              asStr(p.subject) ||
+                              asStr(p.summary) ||
+                              asStr(p.category) ||
+                              "Support Case"
                             }
-                            expectedResponse={p.slaDueAt || p.sla_due_at || "Within 24 hours"}
+                            expectedResponse={
+                              asStr(p.slaDueAt) || asStr(p.sla_due_at) || "Within 24 hours"
+                            }
                           />
                         );
                       }

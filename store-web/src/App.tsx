@@ -17,7 +17,11 @@ import { SellerCarrierPage } from "./pages/seller/SellerCarrierPage";
 import { SellerMailboxPage } from "./pages/seller/SellerMailboxPage";
 import { SellerSettingsPage } from "./pages/seller/SellerSettingsPage";
 import { SellerDemoPage } from "./pages/seller/SellerDemoPage";
-import { SellerShieldPlaceholderPage } from "./pages/seller/SellerShieldPlaceholderPage";
+import { SellerShieldHubPage } from "./pages/seller/SellerShieldHubPage";
+import { SellerApprovalsPage } from "./pages/seller/SellerApprovalsPage";
+import { SellerCasesPage } from "./pages/seller/SellerCasesPage";
+import { SellerActivityPage } from "./pages/seller/SellerActivityPage";
+import { SellerAuditPage } from "./pages/seller/SellerAuditPage";
 import { Clock as ClockIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient } from "./api/client";
@@ -239,10 +243,50 @@ export default function App() {
               }
             />
             <Route
+              path="/seller/shield"
+              element={
+                <SellerLayout>
+                  <SellerShieldHubPage />
+                </SellerLayout>
+              }
+            />
+            <Route
+              path="/seller/approvals"
+              element={
+                <SellerLayout>
+                  <SellerApprovalsPage />
+                </SellerLayout>
+              }
+            />
+            <Route
+              path="/seller/cases"
+              element={
+                <SellerLayout>
+                  <SellerCasesPage />
+                </SellerLayout>
+              }
+            />
+            <Route
+              path="/seller/activity"
+              element={
+                <SellerLayout>
+                  <SellerActivityPage />
+                </SellerLayout>
+              }
+            />
+            <Route
+              path="/seller/audit"
+              element={
+                <SellerLayout>
+                  <SellerAuditPage />
+                </SellerLayout>
+              }
+            />
+            <Route
               path="/seller/shield/*"
               element={
                 <SellerLayout>
-                  <SellerShieldPlaceholderPage />
+                  <SellerShieldHubPage />
                 </SellerLayout>
               }
             />

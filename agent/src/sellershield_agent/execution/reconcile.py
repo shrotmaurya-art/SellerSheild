@@ -28,6 +28,7 @@ from sellershield_agent.store import StoreClient, get_store_client
 from sellershield_agent.store.client import StoreClientError
 
 _STEP_ORDER = {
+    "cancel_order": 0,
     "create_return": 0,
     "transition_return": 1,
     "reserve_refund": 2,
@@ -74,7 +75,7 @@ async def _finalize_reconciled_proposal(
 
     any_forward_failed = any(
         str(by_step.get(s, {}).get("status")) == "failed"
-        for s in ("create_return", "transition_return", "reserve_refund")
+        for s in ("cancel_order", "create_return", "transition_return", "reserve_refund")
     )
     if any_forward_failed:
         await compensate_proposal(
@@ -197,7 +198,7 @@ async def reconcile_once(
         by_step = {str(r["step"]): r for r in pid_execs}
         any_forward_failed = any(
             str(by_step.get(s, {}).get("status")) == "failed"
-            for s in ("create_return", "transition_return", "reserve_refund")
+            for s in ("cancel_order", "create_return", "transition_return", "reserve_refund")
         )
         if any_forward_failed:
             await compensate_proposal(

@@ -756,6 +756,41 @@ class HttpStoreClient(StoreClient):
         except Exception as exc:
             raise StoreUnavailable("Invalid admin order response from store") from exc
 
+    async def cancel_order(
+        self,
+        ctx: RequestContext,
+        order_id: str,
+        reason: str,
+        idempotency_key: str,
+    ) -> Order:
+        self._validate_order_id(order_id)
+        if ctx.principal.role == Role.customer:
+            raise StoreForbidden("Customer token cannot cancel orders directly")
+        if ctx.principal.role in (Role.seller_staff, Role.seller_owner):
+            if ctx.token is None:
+                raise StoreForbidden("Seller token required to cancel orders")
+            headers = {
+                "Authorization": f"Bearer {ctx.token.get_secret_value()}",
+                "Idempotency-Key": idempotency_key,
+                "X-Request-ID": ctx.request_id,
+            }
+        elif ctx.principal.role == Role.service:
+            headers = await self._build_auth_headers(ctx, service_role="executor")
+            headers["Idempotency-Key"] = idempotency_key
+        else:
+            raise StoreForbidden("Not permitted to cancel order")
+
+        resp = await self._execute_post(
+            f"/admin/orders/{order_id}/cancel",
+            headers=headers,
+            json_data={"reason": reason},
+        )
+        self._handle_status_code(resp, f"cancel_order {order_id}")
+        try:
+            return Order.model_validate(clean_order_dict(resp.json()))
+        except Exception as exc:
+            raise StoreUnavailable("Invalid order response from store") from exc
+
     async def get_settings(self, service_ctx: RequestContext) -> StoreSettings:
         headers = await self._build_auth_headers(service_ctx, service_role="monitor")
         resp = await self._execute_get("/admin/settings", headers=headers)

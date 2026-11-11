@@ -15,6 +15,49 @@ from sellershield_agent.tools.base import ToolErrorCode, ToolResult
 from sellershield_agent.tools.gateway import ToolGateway
 
 logger = get_logger("sellershield_agent.orchestrator.resolver")
+_DEVANAGARI_DIGITS_MAP = str.maketrans("०१२३४५६७८९", "0123456789")
+
+
+def _parse_qty_from_text(clean_text: str) -> int | None:
+    """Extract positive quantity from English, Hinglish, or Hindi text safely."""
+    qty_matches = re.findall(r"\b(\d+)\b", clean_text)
+    if qty_matches:
+        return int(qty_matches[0])
+
+    # Check unambiguous single-word numerals (never match English 'do' auxiliary verb blindly)
+    word_map = {
+        "ek": 1,
+        "one": 1,
+        "single": 1,
+        "एक": 1,
+        "two": 2,
+        "both": 2,
+        "pair": 2,
+        "three": 3,
+        "teen": 3,
+        "तीन": 3,
+        "four": 4,
+        "chaar": 4,
+        "char": 4,
+        "चार": 4,
+        "five": 5,
+        "paanch": 5,
+        "panch": 5,
+        "पांच": 5,
+        "पाँच": 5,
+    }
+    for w, val in word_map.items():
+        if re.search(rf"(?:^|\s){re.escape(w)}(?:\s|$|[.,!?])", clean_text):
+            return val
+
+    # Hinglish 'do' / Hindi 'दो' means 2 only when followed by item nouns
+    if re.search(
+        r"(?:^|\s)(?:do|दो)\s+(?:kurta|kurtas|shirt|shirts|item|items|piece|pieces|"
+        r"unit|units|bottle|bottles|kettle|kettles|shoes|pairs|set|sets|cup|cups|qty|quantity)\b",
+        clean_text,
+    ):
+        return 2
+    return None
 
 
 class ResolverBudgetExceeded(Exception):
@@ -112,6 +155,19 @@ class ResolverLoop:
                 )
             else:
                 tool_sequence.append(("list_my_orders", {}))
+        elif intent == "cancellation":
+            if order_id:
+                return await self._execute_cancel_workflow(
+                    ctx=ctx,
+                    order_id=order_id,
+                    allowed_tools=allowed_tools,
+                    slots=slots,
+                    session_id=session_id,
+                    lang=lang,
+                    status_callback=status_callback,
+                    trace=trace,
+                )
+            tool_sequence.append(("list_my_orders", {}))
         elif intent == "policy_question":
             tool_sequence.append(("get_policy_summary", {}))
 
@@ -172,6 +228,132 @@ class ResolverLoop:
                 if status_callback:
                     await status_callback(tool_name, "failed")
 
+        # When asking about refunds or return status without an order/return ID, scan listed orders
+        scan_tool = (
+            "get_refund_status"
+            if intent in ("refund_status", "refund_request")
+            and not slots.get("refund_id")
+            and not order_id
+            else (
+                "get_return_status"
+                if intent in ("return_status", "return_request")
+                and (slots.get("return_status_only") or intent == "return_status")
+                and not slots.get("return_id")
+                and not order_id
+                else None
+            )
+        )
+        if scan_tool and scan_tool in allowed_tools and results and results[0].ok:
+            listed = results[0].data.get("orders", []) if isinstance(results[0].data, dict) else []
+            priority = {"partially_refunded": 0, "delivered": 1, "cancelled": 2}
+            ordered_rows = sorted(
+                [o for o in listed if isinstance(o, dict) and o.get("order_id")],
+                key=lambda o: (priority.get(str(o.get("status", "")), 3)),
+            )
+            for ord_row in ordered_rows[:6]:
+                if tool_call_count >= self.max_tool_calls:
+                    break
+                if time.monotonic() - start_time > self.timeout_seconds:
+                    break
+                scan_oid = str(ord_row["order_id"])
+                if status_callback:
+                    await status_callback(scan_tool, "calling")
+                tool_call_count += 1
+                try:
+                    s_res = await self.gateway.call(
+                        ctx=ctx,
+                        name=scan_tool,
+                        raw_args={"order_id": scan_oid},
+                        allowed=allowed_tools,
+                        session_id=session_id,
+                        lang=lang,
+                    )
+                    results.append(s_res)
+                    if status_callback:
+                        await status_callback(scan_tool, "completed" if s_res.ok else "failed")
+                    if trace is not None and isinstance(trace.get("tool_calls"), list):
+                        trace["tool_calls"].append(
+                            {
+                                "tool": scan_tool,
+                                "args": {"order_id": scan_oid},
+                                "ok": s_res.ok,
+                                "error_code": s_res.error_code,
+                            }
+                        )
+                except Exception as exc:
+                    logger.warning("Order status scan failed", tool=scan_tool, error=str(exc))
+                    if status_callback:
+                        await status_callback(scan_tool, "failed")
+
+        return results
+
+    async def _execute_cancel_workflow(
+        self,
+        ctx: RequestContext,
+        order_id: str,
+        allowed_tools: list[str],
+        slots: dict[str, Any],
+        session_id: str,
+        lang: str = "en",
+        status_callback: Callable[[str, str], Awaitable[None]] | None = None,
+        trace: dict[str, Any] | None = None,
+    ) -> list[ToolResult]:
+        results: list[ToolResult] = []
+        if "get_order" in allowed_tools:
+            if status_callback:
+                await status_callback("get_order", "calling")
+            order_res = await self.gateway.call(
+                ctx=ctx,
+                name="get_order",
+                raw_args={"order_id": order_id},
+                allowed=allowed_tools,
+                session_id=session_id,
+                lang=lang,
+            )
+            results.append(order_res)
+            if status_callback:
+                await status_callback("get_order", "completed" if order_res.ok else "failed")
+            if trace is not None and isinstance(trace.get("tool_calls"), list):
+                trace["tool_calls"].append(
+                    {
+                        "tool": "get_order",
+                        "args": {"order_id": order_id},
+                        "ok": order_res.ok,
+                        "error_code": order_res.error_code,
+                    }
+                )
+            if not order_res.ok or not isinstance(order_res.data, dict):
+                return results
+
+        if "propose_cancellation" in allowed_tools:
+            if status_callback:
+                await status_callback("propose_cancellation", "calling")
+            user_text = str(slots.get("user_text") or "").strip()
+            cancel_args: dict[str, Any] = {"order_id": order_id}
+            if user_text:
+                cancel_args["reason_text"] = user_text[:200]
+            prop_res = await self.gateway.call(
+                ctx=ctx,
+                name="propose_cancellation",
+                raw_args=cancel_args,
+                allowed=allowed_tools,
+                session_id=session_id,
+                lang=lang,
+            )
+            results.append(prop_res)
+            if status_callback:
+                await status_callback(
+                    "propose_cancellation", "completed" if prop_res.ok else "failed"
+                )
+            if trace is not None and isinstance(trace.get("tool_calls"), list):
+                trace["tool_calls"].append(
+                    {
+                        "tool": "propose_cancellation",
+                        "args": cancel_args,
+                        "ok": prop_res.ok,
+                        "error_code": prop_res.error_code,
+                    }
+                )
         return results
 
     async def _execute_return_workflow(
@@ -219,33 +401,17 @@ class ResolverLoop:
 
         # 2. Extract user intent parameters
         user_text = str(slots.get("user_text") or "")
-        lower_text = user_text.lower()
+        lower_text = user_text.lower().translate(_DEVANAGARI_DIGITS_MAP)
 
         # Clean text by removing order ids and currency amounts to parse quantities safely
         clean_text = re.sub(r"\bORD-\d+\b", "", lower_text, flags=re.IGNORECASE)
         clean_text = re.sub(
-            r"(?:refund\s+of\s*)?(?:₹|rs\.?|inr)\s*[\d,]+|\brefund\s+of\s*[\d,]+",
+            r"(?:refund\s+of\s*)?(?:₹|rs\.?|inr|रु\.?)\s*[\d,]+|\brefund\s+of\s*[\d,]+",
             "",
             clean_text,
             flags=re.IGNORECASE,
         )
-        qty_matches = re.findall(r"\b(\d+)\b", clean_text)
-        requested_qty: int | None = int(qty_matches[0]) if qty_matches else None
-        if requested_qty is None:
-            word_map = {
-                "one": 1,
-                "single": 1,
-                "two": 2,
-                "both": 2,
-                "pair": 2,
-                "three": 3,
-                "four": 4,
-                "five": 5,
-            }
-            for w, val in word_map.items():
-                if re.search(rf"\b{w}\b", clean_text):
-                    requested_qty = val
-                    break
+        requested_qty = _parse_qty_from_text(clean_text)
 
         # Determine matching items from order
         matching_items = []
@@ -272,17 +438,45 @@ class ResolverLoop:
 
         # 3. Determine reason code
         reason_code = ReturnReasonCode.changed_mind
-        if any(w in lower_text for w in ["defective", "kharab", "faulty", "not working"]):
+        if any(
+            w in lower_text
+            for w in ["defective", "kharab", "faulty", "not working", "खराब", "काम नहीं"]
+        ):
             reason_code = ReturnReasonCode.defective
-        elif any(w in lower_text for w in ["damaged", "broken", "toota", "cracked", "shattered"]):
+        elif any(
+            w in lower_text
+            for w in [
+                "damaged",
+                "broken",
+                "toota",
+                "tuta",
+                "cracked",
+                "shattered",
+                "टूटा",
+                "फूटा",
+                "क्षतिग्रस्त",
+            ]
+        ):
             reason_code = ReturnReasonCode.damaged
-        elif any(w in lower_text for w in ["wrong", "galat"]):
+        elif any(w in lower_text for w in ["wrong", "galat", "incorrect", "गलत", "अलग"]):
             reason_code = ReturnReasonCode.wrong_item
         elif any(w in lower_text for w in ["not as described", "different"]):
             reason_code = ReturnReasonCode.not_as_described
-        elif any(w in lower_text for w in ["late", "delayed"]):
+        elif any(w in lower_text for w in ["late", "delayed", "der", "layte", "देर", "देरी"]):
             reason_code = ReturnReasonCode.arrived_late
-        elif any(w in lower_text for w in ["changed mind", "changed my mind", "unwanted"]):
+        elif any(
+            w in lower_text
+            for w in [
+                "changed mind",
+                "changed my mind",
+                "unwanted",
+                "nahi chahiye",
+                "pasand nahi",
+                "नहीं चाहिए",
+                "पसंद नहीं",
+                "मन बदल",
+            ]
+        ):
             reason_code = ReturnReasonCode.changed_mind
         elif slots.get("reason_code"):
             try:

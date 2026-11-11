@@ -11,7 +11,7 @@ from sqlalchemy import Engine
 
 from sellershield_agent.audit.models import ActorType
 from sellershield_agent.clock import Clock
-from sellershield_agent.domain.models import Order, RefundStatus, ReturnStatus
+from sellershield_agent.domain.models import Order, OrderStatus, RefundStatus, ReturnStatus
 from sellershield_agent.execution.common import (
     RECONCILE_DELAYS_SECONDS,
     SagaPlan,
@@ -392,6 +392,24 @@ async def reconcile_step(
                 refund_status=rfd.status.value,
             )
             return res
+        except (TimeoutError, StoreClientError) as exc:
+            return await _handle_step_exc(engine, plan, step_row, exc, clock)
+
+    if step == "cancel_order":
+        if order.status == OrderStatus.cancelled:
+            return await record_reconciled_success(
+                engine, plan, step_row, store_ref=order.order_id, clock=clock
+            )
+        try:
+            ord_res = await store.cancel_order(
+                svc_ctx,
+                plan.order_id,
+                plan.reason_text or "Customer requested pre-dispatch cancellation",
+                idem_key,
+            )
+            return await record_reconciled_success(
+                engine, plan, step_row, store_ref=ord_res.order_id, clock=clock
+            )
         except (TimeoutError, StoreClientError) as exc:
             return await _handle_step_exc(engine, plan, step_row, exc, clock)
 

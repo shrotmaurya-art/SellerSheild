@@ -245,6 +245,10 @@ async def revalidate_against_store(
         action = DecisionAction.refund_request
         resolution = ReturnResolution.refund
         evidence_present = False
+    elif prepared.proposal_type == "cancel":
+        action = DecisionAction.cancellation
+        resolution = ReturnResolution.refund
+        evidence_present = False
     else:
         return _stale_deny("Unsupported proposal type.", order)
 

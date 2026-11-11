@@ -1,0 +1,46 @@
+# Deployment context ignore list
+.git/
+.github/
+.env
+.env.*
+!.env.example
+**/*.env
+**/*.env.*
+
+# Python caches and virtual environments
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.venv/
+
+# Node dependencies and build artifacts
+**/node_modules/
+store-web/dist/
+
+# Database files and persistent local storage
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/*.sqlite*
+data/
+store-api/data/
+agent/data/
+
+# Cryptographic keys and secrets
+store-api/keys/*.pem
+keys/*.pem
+**/*.key
+**/*.pem
+
+# Test evidence, caches, scratch, and local tooling
+.evidence/
+deploy/evidence/
+.llm_cache/
+scratch/
+tests/guard/
+.playwright-cli/
+

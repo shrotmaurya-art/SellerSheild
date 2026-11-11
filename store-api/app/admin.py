@@ -11,7 +11,12 @@ from sqlalchemy.orm import Session, joinedload
 import db
 from app.audit import log_audit
 from app.clock import Clock
-from app.deps import require_owner_or_monitor, require_role, require_seller_or_monitor
+from app.deps import (
+    require_owner_or_monitor,
+    require_role,
+    require_seller_or_executor,
+    require_seller_or_monitor,
+)
 from app.errors import (
     AppException,
     InvalidStateException,
@@ -557,20 +562,20 @@ def update_store_settings(
 @router.post(
     "/orders/{order_id}/cancel",
     response_model=OrderResponse,
-    summary="Cancel an order before shipped (seller only)",
+    summary="Cancel an order before shipped (seller or agent-executor)",
 )
 async def admin_cancel_order(
     order_id: str,
     request: Request,
+    principal: dict[str, Any] = Depends(require_seller_or_executor),
     idempotency_key: str = Depends(require_idempotency_key),
-    principal: dict[str, Any] = Depends(require_role("seller_owner", "seller_staff")),
 ) -> Any:
     raw_body = await request.body()
     payload_hash = compute_payload_hash(raw_body)
     req_id = getattr(request.state, "request_id", None) or request.headers.get(
         "X-Request-ID", "unknown"
     )
-    actor = principal.get("sub") or "seller"
+    actor = principal.get("client_id") or principal.get("sub") or "seller"
 
     with Session(db.engine) as session:
         cached = check_idempotency_replay(session, idempotency_key, payload_hash)
@@ -584,7 +589,7 @@ async def admin_cancel_order(
         if order is None:
             raise NotFoundException(message="Order not found")
 
-        if order.status not in ("placed", "confirmed"):
+        if order.status not in ("placed", "packed", "confirmed"):
             raise InvalidStateException(
                 message=(
                     f"Order {order_id} in state '{order.status}' "

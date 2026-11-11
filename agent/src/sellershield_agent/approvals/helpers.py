@@ -25,7 +25,9 @@ from sellershield_agent.execution.common import format_utc_iso
 from sellershield_agent.store.client import (
     RequestContext,
     StoreClient,
+    StoreInvalidState,
     StoreNotFound,
+    StoreValidationError,
 )
 
 MAX_STATEMENT_CHARS = 200
@@ -224,7 +226,13 @@ async def fetch_live_store_bundle(
             own_refund=None,
         )
 
-    raw_refundable = await store_client.get_refundable(svc_ctx, order_id, items=req_pairs)
+    raw_refundable: Refundable | None
+    try:
+        raw_refundable = await store_client.get_refundable(svc_ctx, order_id, items=req_pairs)
+    except (StoreValidationError, StoreInvalidState):
+        # After return creation on store-api, requested qty exceeds remaining_qty (HTTP 400);
+        # build_adjusted_refundable computes exact pre-hold limits from order, returns, and refunds.
+        raw_refundable = None
     all_returns = await store_client.list_returns(svc_ctx, order_id)
     all_refunds = await store_client.list_refunds(svc_ctx, order_id)
     try:

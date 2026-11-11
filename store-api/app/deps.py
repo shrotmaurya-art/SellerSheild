@@ -98,6 +98,42 @@ def require_seller_or_monitor(request: Request) -> dict[str, Any]:
     return principal
 
 
+def require_seller_or_executor(request: Request) -> dict[str, Any]:
+    """
+    Require seller_owner, seller_staff, or agent-executor service token.
+    Logs denied access to store_audit on 403.
+    """
+    principal = require_auth(request)
+    is_seller = principal.get("type") == "user" and principal.get("role") in (
+        "seller_owner",
+        "seller_staff",
+    )
+    is_executor = (
+        principal.get("type") == "service"
+        and principal.get("client_id") == "agent-executor"
+    )
+    if not (is_seller or is_executor):
+        request_id = getattr(request.state, "request_id", None) or request.headers.get(
+            "X-Request-ID", "unknown"
+        )
+        actor = principal.get("sub") or principal.get("customer_id") or "unknown"
+        with Session(db.engine) as session:
+            log_audit(
+                session=session,
+                request_id=request_id,
+                actor=actor,
+                action="write",
+                resource=request.url.path,
+                outcome="denied",
+            )
+        raise AppException(
+            code="forbidden",
+            message="Seller or agent-executor access required",
+            status_code=403,
+        )
+    return principal
+
+
 def require_owner_or_monitor(request: Request) -> dict[str, Any]:
     """Require seller_owner or a service token with orders:read_all scope (audits 403)."""
     principal = require_auth(request)

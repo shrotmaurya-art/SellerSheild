@@ -12,25 +12,25 @@ You must output ONLY a valid JSON object matching the required schema. Do not in
 
 ## Schema Definitions
 - **intent** (string enum):
-  - `order_status`: Customer asking where their order is, delivery date, or status.
+  - `order_status`: Customer asking where their order is, delivery date, listing all orders (`"mere saare orders dikhao"`), or status.
   - `shipping_status`: Specific carrier tracking or in-transit shipping inquiries.
-  - `return_request`: Customer wants to return an item or request a replacement.
-  - `refund_status`: Customer checking the status of an existing refund.
+  - `return_request`: Customer wants to return an item or request a replacement (e.g., `"ek kurta wapas karo ORD-2031"`).
+  - `refund_status`: Customer checking the status/ETA of an existing refund or asking when money will arrive (e.g., `"mera refund kahan tak pahuncha?"`, `"mere paise kab tak wapas aayenge?"`). Note: Asking when money/paisa will come back without requesting a new item pickup is `refund_status`, NOT `return_request`.
   - `refund_request`: Customer requesting money back or refund initiation.
-  - `cancellation`: Customer asking to cancel an order before or during shipment.
-  - `damaged_item`: Customer reports item arrived physically damaged or broken.
-  - `wrong_item`: Customer reports wrong product, size, or color was delivered.
-  - `human_request`: Customer asks to talk to a human agent, manager, or representative, or uses legal escalation keywords.
-  - `policy_question`: Inquiries about return window, policies, or procedures.
-  - `small_talk`: Greetings, pleasantries, thank-you messages.
+  - `cancellation`: Customer asking to cancel/radd an order before or during shipment (e.g., `"cancel kardo ORD-4021"`, `"ऑर्डर रद्द कर दो"`).
+  - `damaged_item`: Customer reports item arrived physically damaged or broken (`"toota hua nikla"`).
+  - `wrong_item`: Customer reports wrong product, size, or color was delivered (`"galat saman aa gaya"`).
+  - `human_request`: Customer asks to talk to a human agent, manager, or representative (`"manager se baat karao"`), or uses legal escalation keywords.
+  - `policy_question`: Inquiries about return window, policies, or procedures (`"return policy kya hai?"`).
+  - `small_talk`: Greetings, pleasantries, thank-you messages (`"namaste"`, `"kaise ho"`).
   - `off_topic`: Irrelevant queries (trivia, programming, general chat).
   - `abuse`: Harassment, profanity, or abusive language.
 - **confidence** (number between 0.0 and 1.0): Model certainty in the classification.
-- **order_ids** (list of strings): Extracted order identifiers matching format `ORD-<digits>`.
+- **order_ids** (list of strings): Extracted order identifiers normalized to ASCII format `ORD-<digits>` (convert Devanagari digits like `ORD-१०४८` to `ORD-1048`).
 - **item_mentions** (list of strings): Names of specific items mentioned by the customer.
 - **reason_code** (string enum): `defective`, `damaged`, `wrong_item`, `not_as_described`, `changed_mind`, `late`, `other`.
 - **reason_text** (string, max 200 chars): Concise customer-supplied reason summary.
-- **language** (string enum): `en`, `hi`, `hinglish`, `other`.
+- **language** (string enum): `en`, `hi` (Devanagari script Hindi), `hinglish` (Hindi written in Latin script / mixed English-Hindi), `other`.
 - **sentiment** (string enum): `calm`, `frustrated`, `angry`.
 - **asks_for_human** (boolean): True if human escalation or legal words are used.
 - **secondary_intents** (list of string enums): Additional intents identified.

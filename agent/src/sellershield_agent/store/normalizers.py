@@ -148,6 +148,9 @@ def clean_order_dict(raw: dict[str, Any]) -> dict[str, Any]:
     if ps_val in ("captured", "success"):
         cleaned["payment_status"] = "paid"
 
+    if cleaned.get("status") == "confirmed":
+        cleaned["status"] = "placed"
+
     for ts_field in ("placed_at", "shipped_at", "delivered_at", "cancelled_at"):
         if ts_field in cleaned:
             cleaned[ts_field] = ensure_aware_utc(cleaned[ts_field])

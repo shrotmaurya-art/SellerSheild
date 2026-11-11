@@ -124,6 +124,99 @@ async def run_forward_saga(
     actor_id = "reconciler" if from_reconcile else "executor"
     return_id: str | None = None
 
+    if plan.proposal_type == "cancel":
+        if plan.decision == "needs_approval":
+            approval_id = await asyncio.to_thread(
+                finalize_approval_sync,
+                engine,
+                plan=plan,
+                return_id=None,
+                refund_id=None,
+                clock=clock,
+                request_id=plan.request_id,
+                actor_type=ActorType.SYSTEM,
+                actor_id=actor_id,
+                update_unknown_to_executing=from_reconcile,
+            )
+            res_pa = ExecutionResult(
+                status="pending_approval",
+                return_id=None,
+                approval_id=approval_id,
+                refund_id=None,
+                message_key="proposal.pending_approval",
+            )
+            if update_idempotency:
+                await asyncio.to_thread(
+                    finalize_proposal_sync,
+                    engine,
+                    plan=plan,
+                    result=res_pa,
+                    clock=clock,
+                    request_id=plan.request_id,
+                    actor_id=actor_id,
+                    emit_client_event=False,
+                    update_proposal_status=False,
+                    update_idempotency=True,
+                )
+            return res_pa
+
+        co_row = by_step.get("cancel_order")
+        if co_row is None or co_row.get("status") != "succeeded":
+            svc_ctx = build_service_ctx(clock, plan.request_id)
+            co_key = step_idempotency_key(plan.proposal_id, "cancel_order")
+
+            async def _cancel_ord() -> str:
+                cancelled = await store.cancel_order(
+                    svc_ctx,
+                    plan.order_id,
+                    plan.reason_text or "Customer requested pre-dispatch cancellation",
+                    co_key,
+                )
+                return cancelled.order_id
+
+            ok, _, err_code = await execute_single_step(
+                engine=engine,
+                plan=plan,
+                step="cancel_order",
+                actor_type=ActorType.SYSTEM,
+                actor_id=actor_id,
+                clock=clock,
+                store_call=_cancel_ord,
+            )
+            if not ok:
+                return await _finish_step_error(
+                    engine=engine,
+                    store=store,
+                    plan=plan,
+                    clock=clock,
+                    actor_id=actor_id,
+                    err_code=err_code,
+                    step="cancel_order",
+                    update_proposal_status=update_proposal_status,
+                    update_idempotency=update_idempotency,
+                )
+
+        res_cancel_ok = ExecutionResult(
+            status="succeeded",
+            return_id=None,
+            approval_id=None,
+            refund_id=None,
+            message_key="proposal.succeeded",
+        )
+        await asyncio.to_thread(
+            finalize_proposal_sync,
+            engine,
+            plan=plan,
+            result=res_cancel_ok,
+            clock=clock,
+            request_id=plan.request_id,
+            actor_id=actor_id,
+            emit_client_event=True,
+            update_proposal_status=update_proposal_status,
+            update_idempotency=update_idempotency,
+        )
+        return res_cancel_ok
+
     if plan.proposal_type == "return":
         cr_row = by_step.get("create_return")
         if cr_row is not None and cr_row.get("status") == "succeeded" and cr_row.get("store_ref"):
@@ -391,9 +484,11 @@ class Executor:
         )
         if prop_status == ProposalStatus.succeeded.value:
             ret_ref = by_step.get("create_return", {}).get("store_ref")
+            rfd_ref = by_step.get("reserve_refund", {}).get("store_ref")
             return ExecutionResult(
                 status="succeeded",
                 return_id=str(ret_ref) if ret_ref else None,
+                refund_id=str(rfd_ref) if rfd_ref else None,
                 message_key="proposal.succeeded",
             )
         return await run_forward_saga(

@@ -1,0 +1,57 @@
+{
+    admin off
+    auto_https off
+}
+
+:{$PORT:8080} {
+    log {
+        output stdout
+        format json
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+
+    # Block sensitive paths (.env, .git, source maps)
+    @blocked path /.env* /.git* *.map
+    handle @blocked {
+        respond 404
+    }
+
+    # Proxy Store API endpoints (/api/*, /demo/*, /sim/*, /mail/*, /healthz, /readyz)
+    @store path /api/* /demo/* /sim/* /mail/* /healthz /readyz
+    handle @store {
+        reverse_proxy 127.0.0.1:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Proxy Agent API (/agent/*) -> strip prefix and forward to 127.0.0.1:8001
+    handle_path /agent/* {
+        reverse_proxy 127.0.0.1:8001 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            flush_interval -1
+            transport http {
+                response_header_timeout 180s
+            }
+        }
+    }
+
+    # Serve built static web app from /app/store-web/dist
+    root * /app/store-web/dist
+    encode zstd gzip
+    try_files {path} /index.html
+    file_server
+}
+

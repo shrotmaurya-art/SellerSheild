@@ -238,6 +238,16 @@ class StoreClient(Protocol):
         """Fetch complete administrative order details including returns and refunds."""
         ...
 
+    async def cancel_order(
+        self,
+        ctx: RequestContext,
+        order_id: str,
+        reason: str,
+        idempotency_key: str,
+    ) -> Order:
+        """Cancel a pre-dispatch order as seller or agent-executor service."""
+        ...
+
     async def get_settings(self, service_ctx: RequestContext) -> StoreSettings:
         """Fetch store settings including autonomy cap and daily cap."""
         ...
