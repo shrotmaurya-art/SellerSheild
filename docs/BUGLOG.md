@@ -12,7 +12,90 @@ Recurrences: 0
 Files touched: path1, path2   <- agents search by file name
 
 Entries (newest first):
-<<<<<<< HEAD
+
+## BUG-019 Pre-dispatch order cancellation stubbed in pipeline as unavailable   [OPEN]   Date: 2026-11-11   Task: BT-1
+Symptom (what the human saw, exact error text):
+Customer typing `"cancel ORD-4021"` received text: `"Order cancellation is not available in this build. If your order has arrived, return options may apply."` instead of cancellation proposal.
+Reproduction (command or test):
+Browser acceptance test 3.8 as Meera Iyer (`ORD-4021`).
+Root cause (evidence, not guesses):
+In `agent/src/sellershield_agent/orchestrator/pipeline.py:660-690`, `Intent.CANCELLATION` was placed inside the unsupported scope block which returned a static unavailable template and denied tool resolution.
+Fix (what changed, file and function):
+Pending implementation in Phase C.
+Regression test (path::name):
+Pending.
+Do NOT (what must never be reintroduced):
+Do not stub `Intent.CANCELLATION` for placed orders that have not yet been dispatched.
+Recurrences: 0
+Files touched: agent/src/sellershield_agent/orchestrator/pipeline.py
+
+## BUG-018 Return proposal defaults to line total quantity instead of requested partial quantity   [OPEN]   Date: 2026-11-11   Task: BT-1
+Symptom (what the human saw, exact error text):
+Customer typing `"I want to return one kurta in ORD-2031"` received a proposal card for `Cotton Kurta (×2)` for `₹1,257.98` instead of 1 kurta (~`₹598.99`).
+Reproduction (command or test):
+Browser acceptance test 3.4 as Diya Nair (`ORD-2031`).
+Root cause (evidence, not guesses):
+Quantity extraction in `router.py` and `resolver.py` does not parse word numerals ("one", "single", "1") from message text when building item selections for `propose_return`, falling back to full line item quantity `oi.qty`.
+Fix (what changed, file and function):
+Pending implementation in Phase C.
+Regression test (path::name):
+Pending.
+Do NOT (what must never be reintroduced):
+Do not default to full line item quantity when customer explicitly specifies a partial quantity.
+Recurrences: 0
+Files touched: agent/src/sellershield_agent/understand/router.py, agent/src/sellershield_agent/orchestrator/resolver.py
+
+## BUG-017 Saga transition_return fails with 403 Forbidden during auto-approval execution   [FIXED]   Date: 2026-11-11   Task: BT-1
+Symptom (what the human saw, exact error text):
+Proposal `PRP-f640cda5` (`ORD-2032`) had `decision='allow'` and customer confirmed, but return claim remained in `requested` status (`Waiting for seller review`) in the seller's manual queue. Execution audit log recorded `execution_step_failed: error_code="forbidden", step="transition_return"`.
+Reproduction (command or test):
+Browser acceptance test 3.1 as Diya Nair (`ORD-2032`).
+Root cause (evidence, not guesses):
+When `store.transition_return` is invoked by `saga.py` with `svc_ctx`, `HttpStoreClient._get_service_token("executor")` is called. In `agent/src/sellershield_agent/config.py`, `STORE_EXECUTOR_CLIENT_ID`, `STORE_EXECUTOR_CLIENT_SECRET`, `STORE_MONITOR_CLIENT_ID`, `STORE_MONITOR_CLIENT_SECRET`, and `WEBHOOK_SECRET` defaulted to `None`. In HTTP mode, `_get_service_token` failed to authenticate with `store-api`, which requires client_id `agent-executor` with `returns:transition` scope.
+Fix (what changed, file and function):
+In `agent/src/sellershield_agent/config.py`: configured default values matching store-api dev seed: `STORE_EXECUTOR_CLIENT_ID="agent-executor"`, `STORE_EXECUTOR_CLIENT_SECRET=SecretStr("fake_executor_secret_key_12345")`, `STORE_MONITOR_CLIENT_ID="agent-monitor"`, `STORE_MONITOR_CLIENT_SECRET=SecretStr("fake_monitor_secret_key_67890")`, and `WEBHOOK_SECRET=SecretStr("fake_dev_webhook_secret_do_not_use_in_prod")`.
+Regression test (path::name):
+agent/tests/test_store_http_phase3.py::test_executor_service_token_transition_return
+agent/tests/test_config.py::test_default_service_credentials
+Do NOT (what must never be reintroduced):
+Do not leave executor or monitor service credentials unset in Settings defaults.
+Recurrences: 0
+Files touched: agent/src/sellershield_agent/config.py
+
+## BUG-016 Order listing and unspecific where-is-order queries fall back to arbitrary ORD-1051   [OPEN]   Date: 2026-11-11   Task: BT-1
+Symptom (what the human saw, exact error text):
+`"show my orders"` or `"where is my order"` (with no ID) outputs `"Order ORD-1051 status is placed."` instead of rendering a list/chips of orders.
+Reproduction (command or test):
+Browser acceptance tests 1.2 and 1.3 as Aarav Mehta.
+Root cause (evidence, not guesses):
+In `pipeline.py`, when `list_my_orders` runs, `sheet.orders` is populated, but `draft_text = template_orders_list(sheet, "en")` fallback handling in `pipeline.py:951` falls back to `template_shipping_status(sheet, "en")`, which takes `next(iter(sheet.allowed_ids))` (`ORD-1051`). Furthermore, unspecific `"where is my order"` query does not provide chips prompting the user to select an order.
+Fix (what changed, file and function):
+Pending implementation in Phase C.
+Regression test (path::name):
+Pending.
+Do NOT (what must never be reintroduced):
+Do not use `next(iter(sheet.allowed_ids))` as a fallback order ID when multiple orders exist and none was specified.
+Recurrences: 0
+Files touched: agent/src/sellershield_agent/orchestrator/pipeline.py, agent/src/sellershield_agent/compose/templates.py
+
+## BUG-015 Router regex misses typos and pipeline loses active order context across conversation turns   [OPEN]   Date: 2026-11-11   Task: BT-1
+Symptom (what the human saw, exact error text):
+1. `"wher is ordr 1048 plz"` resulted in `"Order ORD-1051 status is placed."`
+2. Follow-up query `"when will it arrive?"` immediately after asking about `ORD-1048` lost context and responded with `ORD-1051`.
+Reproduction (command or test):
+Browser acceptance tests 1.5 and 1.6 as Aarav Mehta.
+Root cause (evidence, not guesses):
+1. In `understand/router.py`, `ORD_FLEXIBLE_REGEX` only matches `(?:ORD|order)` with strict space/hyphen/hash, failing on typos like `ordr`, `odr`.
+2. In `pipeline.py`, session state does not retrieve previously referenced active `order_id` from preceding turns when the user asks an elliptical follow-up question.
+Fix (what changed, file and function):
+Pending implementation in Phase C.
+Regression test (path::name):
+Pending.
+Do NOT (what must never be reintroduced):
+Do not discard previous turn order context in multi-turn conversations.
+Recurrences: 0
+Files touched: agent/src/sellershield_agent/understand/router.py, agent/src/sellershield_agent/orchestrator/pipeline.py
+
 ## BUG-014 Endpoint readyz un-injected JWKS client causing 16s timeout and outbox race condition   [FIXED]   Date: 2026-11-11   Task: T3.6
 Symptom (what the human saw, exact error text):
 `AssertionError: assert 'sending' == 'failed'` in `test_audit_fail_blocks_mutation_t20_mail_down_and_clears_on_reset` during full suite runs, accompanied by multiple 16.4-second JWKS fetch timeout warnings: `[WinError 10061] No connection could be made because the target machine actively refused it`.
@@ -261,6 +344,3 @@ Do NOT (what must never be reintroduced):
 Do not pass raw urlparse(url).path directly to Path() on Windows without stripping leading slashes for relative SQLite paths.
 Recurrences: 0
 Files touched: agent/src/sellershield_agent/db.py
-=======
-(none yet)
->>>>>>> 547a5bef9dd9e200c6118b2900efc9f5447e87be

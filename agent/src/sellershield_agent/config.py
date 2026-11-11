@@ -34,11 +34,11 @@ class Settings(BaseSettings):
     JWT_ISSUER: str = "nestkart-store"
 
     # Store credentials
-    STORE_EXECUTOR_CLIENT_ID: str | None = None
-    STORE_EXECUTOR_CLIENT_SECRET: SecretStr | None = None
-    STORE_MONITOR_CLIENT_ID: str | None = None
-    STORE_MONITOR_CLIENT_SECRET: SecretStr | None = None
-    WEBHOOK_SECRET: SecretStr | None = None
+    STORE_EXECUTOR_CLIENT_ID: str = "agent-executor"
+    STORE_EXECUTOR_CLIENT_SECRET: SecretStr = SecretStr("fake_executor_secret_key_12345")
+    STORE_MONITOR_CLIENT_ID: str = "agent-monitor"
+    STORE_MONITOR_CLIENT_SECRET: SecretStr = SecretStr("fake_monitor_secret_key_67890")
+    WEBHOOK_SECRET: SecretStr = SecretStr("fake_dev_webhook_secret_do_not_use_in_prod")
 
     # LLM Settings (optional for now)
     LLM_PRIMARY_BASE_URL: str | None = None
