@@ -7,6 +7,22 @@ What changed:
 Verification run (commands and result summary):
 Follow-ups:
 
+## 2026-11-12 TASK DEP Deploy the web app, store API and agent to one public URL with CLI tools
+Files: deploy/Dockerfile, deploy/Caddyfile, deploy/start.sh, deploy/set-secrets.ps1, deploy/deploy.ps1, deploy/smoke.ps1, deploy/reset-demo.ps1, deploy/README.md, deploy/.dockerignore, railway.json, README.md, docs/CHANGELOG.md, docs/STATE.md
+What changed:
+- **`deploy/Dockerfile`**: Multi-stage container build (`node:20-alpine` builds `store-web` with `ENV VITE_DEMO_MODE=true`; `python:3.12-slim` runtime installs Caddy 2, uv 0.5.26, and dependencies for both `store-api` and `agent`).
+- **`deploy/Caddyfile`**: Reverse proxy on `$PORT` routing `/api/*`, `/demo/*`, `/sim/*`, `/mail/*`, `/healthz`, `/readyz`, and `/.well-known/*` to Store API (`127.0.0.1:8000`), unbuffered SSE `/agent/*` to Agent API (`127.0.0.1:8001`), and fallback SPA static file server for React frontend.
+- **`deploy/start.sh`**: Runtime initialization script that seeds database, generates fresh RS256 JWT keypair at runtime, starts store and agent uvicorn daemons with `--proxy-headers`, and supervises Caddy.
+- **`deploy/set-secrets.ps1`**: Secure secret provisioning using .NET `RNGCryptoServiceProvider` and `Read-Host -AsSecureString` for zero plaintext leakage.
+- **`deploy/smoke.ps1`**: Automated blackbox verification testing live public URL from the outside.
+- **`README.md`**: Comprehensive documentation with live demo badge, 1-click login persona guide, demo control center usage, system architecture, local setup guide, and verification commands.
+Verification run:
+- Railway live deployment `7a090869-aad9-4fdc-a27d-7ae33a995f13` (Online).
+- `smoke.ps1` against `https://sellershield-ai-production.up.railway.app`: All 11 checks PASSED (Store `/healthz`, Store `/readyz`, Agent `/agent/healthz`, Agent `/agent/readyz` with `store_mode: http`, Dev routes 404, Agent docs 404, OpenAPI 404, `.env` 404, `.git/config` 404, Security headers present, Login 401 on bad password, 20 parallel requests p95 latency 421ms).
+- Live login verification: `POST /api/v1/auth/login` returned valid RS256 JWT access token for demo customer `aarav.mehta@example.test`.
+Follow-ups:
+- Provide evaluation guide and credentials to judges.
+
 ## 2026-11-11 BT-1 Typo matching, session memory, order listing and partial quantity returns (BUG-015, BUG-016, BUG-018)
 Files: agent/src/sellershield_agent/understand/router.py, agent/src/sellershield_agent/orchestrator/pipeline.py, agent/src/sellershield_agent/orchestrator/resolver.py, agent/tests/bt1/test_bug015_016_018.py, docs/BUGLOG.md, docs/BROWSER_TEST_REPORT.md, docs/CHANGELOG.md
 What changed:

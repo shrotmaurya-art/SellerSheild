@@ -26,30 +26,20 @@ if ($Platform -eq "railway") {
     }
     Write-Host "Logged in as: $whoami"
 
-    Write-Host "==> [2/4] Linking or creating Railway project..."
-    # Check if a project is linked
-    $status = railway status 2>&1
-    if ($LASTEXITCODE -ne 0 -or $status -match "No project linked") {
-        Write-Host "Initializing project 'sellershield-ai'..."
-        railway init --name sellershield-ai
-    }
-
-    Write-Host "==> [3/4] Uploading context and initiating cloud build..."
-    railway up --detach
+    Write-Host "==> [2/3] Uploading context and initiating cloud build on Railway..."
+    railway up --service sellershield-ai --detach
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Railway deployment failed."
         exit 1
     }
 
-    Write-Host "==> [4/4] Ensuring public domain is active..."
-    # Generate domain if not exists
-    $domainInfo = railway domain 2>&1
-    Write-Host "Domain info: $domainInfo"
+    $appUrl = "https://sellershield-ai-production.up.railway.app"
 
     Write-Host ""
     Write-Host "=========================================================="
-    Write-Host " Deployment Complete!"
-    Write-Host " Check your live URL in the Railway dashboard or run: railway domain"
+    Write-Host " Deployment Triggered!"
+    Write-Host " Live URL: $appUrl"
+    Write-Host " Check build logs with: railway logs"
     Write-Host "=========================================================="
 
 } elseif ($Platform -eq "fly") {

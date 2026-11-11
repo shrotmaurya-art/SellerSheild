@@ -1,8 +1,15 @@
 # STATE (handoff note; update at the end of every session)
-Updated: 2026-11-11 23:10 IST
-Phase: BT-1 (Full Browser Acceptance Test, Diagnose & Fix) - IN PROGRESS
-Current task: TASK BT-1 - Browser Acceptance Test & Fixes
+Updated: 2026-11-12 03:30 IST
+Phase: DEP (Deployment to Public Cloud URL) - COMPLETED
+Current task: TASK DEP - Deploy web app, store API and agent to one public URL
 Last completed:
+- TASK DEP: Public Cloud Deployment on Railway (`[NO COMMIT]`).
+  - Container: Single-container multi-stage Dockerfile (`deploy/Dockerfile`) bundling React web frontend (`store-web`), Caddy 2 reverse proxy, and Python 3.12 runtime with `store-api` and `agent` services.
+  - Live Public URL: `https://sellershield-ai-production.up.railway.app`.
+  - Security hardening: DEV_MODE=false, STORE_MODE=http, DEMO_MODE=true, dev routes 404, agent docs 404, .env and .git files blocked (404), security headers (nosniff, DENY, strict CSP, referrer policy) enforced.
+  - One-Click Demo Personas: Enabled in frontend production bundle (`VITE_DEMO_MODE=true`) with 5 customers and 2 sellers.
+  - Verification: `deploy/smoke.ps1` 11/11 checks PASS, live `POST /api/v1/auth/login` mints verified RS256 JWT tokens.
+  - Documentation: `README.md` completely updated with live demo guide, architecture, local setup instructions, and verification commands.
 - BT-1 Fix 2 & 3: Typo matching, session memory, order listing and partial quantity returns (`[COMMIT local only]`).
   - Resolved `BUG-015` (typo tolerance `ordr`/`odr`, multi-turn context memory for active order ID `ORD-1048`).
   - Resolved `BUG-016` (order listing queries render `template_orders_list` and interactive order selection chips `build_chips_card` instead of falling back to `ORD-1051`).

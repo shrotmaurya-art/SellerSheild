@@ -52,21 +52,26 @@ if ($Platform -eq "railway") {
         exit 1
     }
 
-    # Set variables in Railway
-    railway variables --set "WEBHOOK_SECRET=$webhookSecret" | Out-Null
-    railway variables --set "STORE_EXECUTOR_CLIENT_ID=agent-executor" | Out-Null
-    railway variables --set "STORE_EXECUTOR_CLIENT_SECRET=$executorSecret" | Out-Null
-    railway variables --set "STORE_MONITOR_CLIENT_ID=agent-monitor" | Out-Null
-    railway variables --set "STORE_MONITOR_CLIENT_SECRET=$monitorSecret" | Out-Null
-    railway variables --set "SERVICE_CLIENT_SECRETS=$serviceSecretsJson" | Out-Null
-    railway variables --set "LLM_PRIMARY_API_KEY=$primaryKey" | Out-Null
-    railway variables --set "DEV_MODE=false" | Out-Null
-    railway variables --set "DEMO_MODE=true" | Out-Null
-    railway variables --set "STORE_MODE=http" | Out-Null
-
+    # Set variables in Railway on the linked service
+    $varArgs = @(
+        "variable", "set",
+        "WEBHOOK_SECRET=$webhookSecret",
+        "STORE_EXECUTOR_CLIENT_ID=agent-executor",
+        "STORE_EXECUTOR_CLIENT_SECRET=$executorSecret",
+        "STORE_MONITOR_CLIENT_ID=agent-monitor",
+        "STORE_MONITOR_CLIENT_SECRET=$monitorSecret",
+        "SERVICE_CLIENT_SECRETS=$serviceSecretsJson",
+        "LLM_PRIMARY_API_KEY=$primaryKey",
+        "DEV_MODE=false",
+        "DEMO_MODE=true",
+        "STORE_MODE=http",
+        "--skip-deploys"
+    )
     if ($secondaryKey) {
-        railway variables --set "LLM_SECONDARY_API_KEY=$secondaryKey" | Out-Null
+        $varArgs += "LLM_SECONDARY_API_KEY=$secondaryKey"
     }
+
+    & railway @varArgs | Out-Null
 
     Write-Host "SUCCESS: Secrets and production variables securely configured on Railway."
 } elseif ($Platform -eq "fly") {

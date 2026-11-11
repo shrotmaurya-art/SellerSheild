@@ -72,10 +72,13 @@ Write-Host "`n--> 2. Security and Hardening Checks"
 function Test-HttpCode {
     param([string]$Url, [int]$ExpectedCode)
     try {
-        $res = Invoke-WebRequest -Uri $Url -Method Get -SkipHttpErrorCheck
+        $res = Invoke-WebRequest -Uri $Url -Method Get -UseBasicParsing
         return ($res.StatusCode -eq $ExpectedCode)
     } catch {
-        return ($_.Exception.Response.StatusCode.value__ -eq $ExpectedCode)
+        if ($_.Exception.Response) {
+            return ($_.Exception.Response.StatusCode.value__ -eq $ExpectedCode)
+        }
+        return $false
     }
 }
 
@@ -87,9 +90,9 @@ Record-Check "Sensitive File Blocked (/.git/config -> 404)" (Test-HttpCode "$Bas
 
 # Check Security Headers
 try {
-    $headers = (Invoke-WebRequest -Uri "$BaseUrl/" -Method Head).Headers
-    $hasNosniff = ($headers["X-Content-Type-Options"] -contains "nosniff" -or $headers["x-content-type-options"] -contains "nosniff")
-    $hasDeny = ($headers["X-Frame-Options"] -contains "DENY" -or $headers["x-frame-options"] -contains "DENY")
+    $headers = (Invoke-WebRequest -Uri "$BaseUrl/" -Method Head -UseBasicParsing).Headers
+    $hasNosniff = ($headers["X-Content-Type-Options"] -eq "nosniff" -or $headers["x-content-type-options"] -eq "nosniff")
+    $hasDeny = ($headers["X-Frame-Options"] -eq "DENY" -or $headers["x-frame-options"] -eq "DENY")
     Record-Check "Security Headers (X-Content-Type-Options, X-Frame-Options)" ($hasNosniff -and $hasDeny) "Present"
 } catch {
     Record-Check "Security Headers" $false $_.Exception.Message
@@ -100,12 +103,17 @@ Write-Host "`n--> 3. Client IP and Login Rate Limit Verification"
 $loginPayload = @{ email = "aarav@example.com"; password = "WrongPassword123!" } | ConvertTo-Json
 $ipTestPass = $false
 try {
-    $loginResp = Invoke-WebRequest -Uri "$BaseUrl/api/v1/auth/login" -Method Post -Body $loginPayload -ContentType "application/json" -SkipHttpErrorCheck
-    # Should be 401 for bad password, proving endpoint reachable and processing requests
+    $loginResp = Invoke-WebRequest -Uri "$BaseUrl/api/v1/auth/login" -Method Post -Body $loginPayload -ContentType "application/json" -UseBasicParsing
     $ipTestPass = ($loginResp.StatusCode -eq 401)
     Record-Check "Login Endpoint Connectivity" $ipTestPass "HTTP Code: $($loginResp.StatusCode)"
 } catch {
-    Record-Check "Login Endpoint Connectivity" $false $_.Exception.Message
+    if ($_.Exception.Response) {
+        $code = $_.Exception.Response.StatusCode.value__
+        $ipTestPass = ($code -eq 401)
+        Record-Check "Login Endpoint Connectivity" $ipTestPass "HTTP Code: $code"
+    } else {
+        Record-Check "Login Endpoint Connectivity" $false $_.Exception.Message
+    }
 }
 
 # 4. Latency under parallel status requests (20 requests)

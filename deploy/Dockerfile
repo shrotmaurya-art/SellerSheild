@@ -9,6 +9,7 @@ RUN npm ci
 
 # Copy frontend source and build production bundle
 COPY store-web/ ./
+ENV VITE_DEMO_MODE=true
 RUN npm run build
 
 # Stage 2: Runtime image with Python 3.12, Caddy, uv, and dependencies
@@ -29,9 +30,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 
 WORKDIR /app
 
-# Copy dependency manifests and lockfiles for store-api and agent
-COPY store-api/pyproject.toml store-api/uv.lock store-api/README.md /app/store-api/
-COPY agent/pyproject.toml agent/uv.lock agent/README.md /app/agent/
+# Copy application packages for store-api and agent
+COPY store-api/ /app/store-api/
+COPY agent/ /app/agent/
 
 # Install store-api dependencies into /app/store-api/.venv
 RUN cd /app/store-api && uv sync --frozen --no-dev
@@ -39,9 +40,7 @@ RUN cd /app/store-api && uv sync --frozen --no-dev
 # Install agent dependencies into /app/agent/.venv
 RUN cd /app/agent && uv sync --frozen --no-dev
 
-# Copy application source code and scenarios
-COPY store-api/ /app/store-api/
-COPY agent/ /app/agent/
+# Copy scripts, scenarios, and contracts
 COPY scripts/ /app/scripts/
 COPY scenarios/ /app/scenarios/
 COPY contracts/ /app/contracts/

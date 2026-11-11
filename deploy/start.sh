@@ -35,7 +35,8 @@ STORE_PID=$!
 # 5. Start Agent API on 127.0.0.1:8001
 echo "==> Starting Agent API daemon on 127.0.0.1:8001..."
 cd /app/agent
-/app/agent/.venv/bin/python -m uvicorn sellershield_agent.main:app \
+/app/agent/.venv/bin/python -m uvicorn sellershield_agent.main:create_app \
+    --factory \
     --app-dir /app/agent/src \
     --host 127.0.0.1 \
     --port 8001 \
