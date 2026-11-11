@@ -5,6 +5,7 @@ ADR-003 OpenAI-compatible client for all LLM providers: one adapter, config swit
 ADR-004 LLM tools are read and propose only; writes live in the execution layer after a human click.
 ADR-005 uv for Python and just for tasks on Windows (PowerShell shell); no global pip.
 ADR-006 Store is the identity provider (RS256 and JWKS); agent only verifies.
+<<<<<<< HEAD
 ADR-007 Store OpenAPI 3.1 contract design and loophole closures.
 ADR-008 Agent OpenAPI 3.1 contract design and security guardrails.
 ADR-09 Agent service skeleton, config fail-fast, and redacted logging.
@@ -129,3 +130,10 @@ Option 2 chosen.
 - Loophole closure 5: Prompts and messages are never logged, ensuring customer data and PII never leak into telemetry.
 Consequences:
 12 offline tests pass with respx. Agent check suite reaches 97 passing tests, ruff clean, mypy strict clean. Ready for live human smoke testing.
+=======
+
+
+Entry format:
+## ADR-0xx Title  Date  Status
+Context / Options considered / Decision / Consequences
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b

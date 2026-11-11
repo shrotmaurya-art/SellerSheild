@@ -7,6 +7,7 @@ What changed:
 Verification run (commands and result summary):
 Follow-ups:
 
+<<<<<<< HEAD
 ## 2026-11-11 T0.10 LLM adapter and provider chain
 Files: agent/src/sellershield_agent/llm/__init__.py, agent/src/sellershield_agent/llm/config.py, agent/src/sellershield_agent/llm/client.py, agent/src/sellershield_agent/llm/cache.py, agent/src/sellershield_agent/llm/chain.py, agent/src/sellershield_agent/llm/structured.py, agent/scripts/llm_smoke.py, agent/tests/test_llm.py, docs/CHANGELOG.md, docs/FEATURES.md, docs/PITFALLS.md, docs/DECISIONS.md, docs/TASKS.md, docs/STATE.md
 What changed:
@@ -142,3 +143,6 @@ Verification run (commands and result summary):
 - `Set-Content -Path .env -Value 'TEST=1' ; git status ; Remove-Item .env`: Verified that .env is ignored and excluded by git status.
 Follow-ups:
 - Human toolchain installation for `just` and `gitleaks` (T0.1).
+=======
+(none yet)
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b

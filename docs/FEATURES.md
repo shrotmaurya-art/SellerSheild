@@ -10,6 +10,7 @@ Known limits:
 Do not change because:
 Related: BUG ids, ADR ids, spec sections
 
+<<<<<<< HEAD
 ## F-A00 Contracts   [done]
 What it does:
 Defines and freezes the OpenAPI 3.1 specifications for Store and Agent services, establishing the authoritative contract for W1 (backend), W2 (frontend), and A (agent).
@@ -181,3 +182,16 @@ F-A07 Policy engine                       F-A18 Proactive monitor
 F-A08 FactSheet and verifier              F-A19 Push stream
 F-A09 Tool gateway                        F-A20 Evaluation harness
 F-A10 Orchestrator
+=======
+Registry (planned):
+F-A01 Config and logging              F-A11 Proposals and confirm
+F-A02 Error envelope and request ids  F-A12 Executor saga
+F-A03 Database layer                  F-A13 Approvals
+F-A04 Money and time helpers          F-A14 Audit chain
+F-A05 JWT and JWKS verification       F-A15 Cases and handler model
+F-A06 LLM provider chain              F-A16 Memory
+F-A07 Policy engine                   F-A17 Notification outbox
+F-A08 FactSheet and verifier          F-A18 Proactive monitor
+F-A09 Tool gateway                    F-A19 Push stream
+F-A10 Orchestrator                    F-A20 Evaluation harness
+>>>>>>> 464b2531d34564b356d74ce0a20c885038d9957b
