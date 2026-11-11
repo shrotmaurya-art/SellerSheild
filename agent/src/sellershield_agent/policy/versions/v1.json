@@ -1,0 +1,81 @@
+{
+  "version": "v1",
+  "effective_from": "2026-11-01T00:00:00Z",
+  "currency": "INR",
+  "timezone": "Asia/Kolkata",
+  "return_windows_days": {
+    "apparel": 10,
+    "home_kitchen": 7,
+    "electronics": 7,
+    "beauty": 0,
+    "custom": 0
+  },
+  "non_returnable_flags": [
+    "final_sale",
+    "hygiene",
+    "custom"
+  ],
+  "auto_limit_paise": 100000,
+  "customer_cumulative_auto_limit_30d_paise": 100000,
+  "staff_approval_limit_paise": 200000,
+  "hard_ceiling_paise": 500000,
+  "pre_dispatch_cancel_auto_limit_paise": 500000,
+  "return_shipping": {
+    "free_reasons": [
+      "defective",
+      "damaged",
+      "wrong_item",
+      "not_as_described"
+    ],
+    "customer_fee_paise": 6000
+  },
+  "restocking_fee_bp": {
+    "apparel": 0,
+    "home_kitchen": 0,
+    "electronics": 0,
+    "beauty": 0,
+    "custom": 0
+  },
+  "risk": {
+    "returns_30d_medium_threshold": 3,
+    "returns_30d_medium_weight": 30,
+    "returns_30d_high_threshold": 5,
+    "returns_30d_high_weight": 50,
+    "refund_ratio_90d_threshold_bp": 4000,
+    "refund_ratio_90d_weight": 20,
+    "order_value_min_paise": 200000,
+    "order_value_weight": 20,
+    "account_age_days_max": 14,
+    "account_age_weight": 15,
+    "suspected_injection_weight": 10,
+    "band_medium_min": 30,
+    "band_high_min": 60
+  },
+  "approval_sla_hours": 24,
+  "approval_expiry_days": 7,
+  "case_slas": {
+    "standard": 48,
+    "urgent": 24
+  },
+  "escalation_keywords": [
+    "lawyer",
+    "legal",
+    "court",
+    "consumer forum",
+    "fraud",
+    "sue",
+    "police"
+  ],
+  "cod_refund_methods": [
+    "store_credit",
+    "upi_payout"
+  ],
+  "customer_facing_text": {
+    "return_window_description": "Returns must be requested within the category return window from delivery date.",
+    "free_return_reasons": "Return pickup is free for defective, damaged, wrong item, or not as described items.",
+    "customer_fee_description": "A return shipping fee of ₹60 is deducted for change-of-mind returns.",
+    "refund_timing": "Refunds are processed within 5-7 business days after inspection.",
+    "non_returnable_description": "Items marked as final sale, hygiene, or custom cannot be returned."
+  }
+}
+

@@ -1,0 +1,37 @@
+id: L02
+customer: C001
+seed_scenario: SC-01
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: false
+turns:
+  - say: "Mera parcel kab tak aayega ORD-1048 ka?"
+expect:
+  intent: order_status
+  tools_called:
+    - get_order
+    - get_shipping_status
+  tools_forbidden:
+    - propose_return
+    - propose_refund
+  store_state_after: {}
+  proposal: null
+  reply_must_contain_facts:
+    - ORD-1048
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script:
+  - intent: order_status
+    confidence: 0.95
+    order_ids: ["ORD-1048"]
+    item_ids: []
+    reason_code: null
+    language: hinglish
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []

@@ -1,0 +1,36 @@
+id: L09
+customer: C001
+seed_scenario: SC-11
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: false
+turns:
+  - say: "The copper bottle in ORD-1061 arrived completely damaged and broken."
+expect:
+  intent: damaged_item
+  tools_called:
+    - get_order
+    - create_case
+  tools_forbidden: []
+  store_state_after:
+    cases_count: 1
+  proposal: null
+  reply_must_contain_facts:
+    - ORD-1061
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script:
+  - intent: damaged_item
+    confidence: 0.95
+    order_ids: ["ORD-1061"]
+    item_ids: ["ITEM-1061-1"]
+    reason_code: damaged
+    language: en
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []

@@ -1,0 +1,9 @@
+Subject: Support case created: {case_id}
+
+Hello,
+
+A support case {case_id} has been opened for order {order_id}.
+
+Our customer support team is reviewing your details.
+
+Thank you for your patience.

@@ -1,0 +1,38 @@
+[
+  {
+    "return_id": "RET-9050",
+    "item_id": "ITEM-3050-1",
+    "qty": 1,
+    "condition_note": "Defective bottle cap",
+    "status": "requested"
+  },
+  {
+    "return_id": "RET-3001",
+    "item_id": "ITEM-3001-1",
+    "qty": 1,
+    "condition_note": "Defective item verified",
+    "status": "completed"
+  },
+  {
+    "return_id": "RET-3002",
+    "item_id": "ITEM-3002-1",
+    "qty": 1,
+    "condition_note": "Unopened packaging",
+    "status": "completed"
+  },
+  {
+    "return_id": "RET-3003",
+    "item_id": "ITEM-3003-1",
+    "qty": 1,
+    "condition_note": "Good condition",
+    "status": "completed"
+  },
+  {
+    "return_id": "RET-3004",
+    "item_id": "ITEM-3004-1",
+    "qty": 1,
+    "condition_note": "Color faded inspection verified",
+    "status": "completed"
+  }
+]
+

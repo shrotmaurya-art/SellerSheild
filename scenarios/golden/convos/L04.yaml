@@ -1,0 +1,38 @@
+id: L04
+customer: C001
+seed_scenario: SC-04
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: true
+turns:
+  - say: "The cookware in ORD-1042 is defective, please return it."
+expect:
+  intent: return_request
+  tools_called:
+    - get_order
+    - propose_return
+  tools_forbidden: []
+  store_state_after:
+    approvals_count: 1
+  proposal:
+    amount_paise: 120000
+    decision: "needs_approval"
+  reply_must_contain_facts:
+    - ORD-1042
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script:
+  - intent: return_request
+    confidence: 0.95
+    order_ids: ["ORD-1042"]
+    item_ids: ["ITEM-1042-1"]
+    reason_code: defective
+    language: en
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []

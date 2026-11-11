@@ -1,0 +1,52 @@
+{
+  "name": "store-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint src --ext ts,tsx --max-warnings 0",
+    "test": "vitest run",
+    "gen:api": "openapi-typescript ../contracts/openapi-store.json -o src/api/schema.d.ts"
+  },
+  "dependencies": {
+    "@microsoft/fetch-event-source": "2.0.1",
+    "@tanstack/react-query": "5.62.7",
+    "clsx": "2.1.1",
+    "date-fns": "4.1.0",
+    "date-fns-tz": "3.2.0",
+    "dompurify": "3.2.3",
+    "lucide-react": "0.468.0",
+    "openapi-fetch": "0.13.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-markdown": "9.0.1",
+    "react-router-dom": "6.28.0",
+    "tailwind-merge": "2.5.5"
+  },
+  "devDependencies": {
+    "@types/dompurify": "3.0.5",
+    "@types/node": "22.10.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@typescript-eslint/eslint-plugin": "8.18.0",
+    "@typescript-eslint/parser": "8.18.0",
+    "@vitejs/plugin-react": "4.3.4",
+    "autoprefixer": "10.4.20",
+    "eslint": "8.57.1",
+    "eslint-plugin-react": "7.37.2",
+    "eslint-plugin-react-hooks": "5.1.0",
+    "jsdom": "25.0.1",
+    "openapi-typescript": "7.4.3",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.16",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
+  },
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node@4.68.1"
+  }
+}
+

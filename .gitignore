@@ -1,0 +1,31 @@
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+data/
+uploads/
+.venv/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.llm_cache/
+.DS_Store
+*.bundle
+
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+
+# Agent skills
+.agents/
+skills-lock.json
+
+# Evidence files
+docs/evidence/*
+!docs/evidence/README.md
+.evidence/
+docs/spec/

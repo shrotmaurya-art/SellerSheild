@@ -1,0 +1,59 @@
+[
+  {
+    "user_id": "S001",
+    "email": "priya.sharma@nestkart.test",
+    "role": "seller_owner",
+    "display_name": "Priya Sharma",
+    "status": "active",
+    "created_at": "T0-60d"
+  },
+  {
+    "user_id": "S002",
+    "email": "kiran.rao@nestkart.test",
+    "role": "seller_staff",
+    "display_name": "Kiran Rao",
+    "status": "active",
+    "created_at": "T0-60d"
+  },
+  {
+    "user_id": "C001",
+    "email": "aarav.mehta@example.test",
+    "role": "customer",
+    "display_name": "Aarav Mehta",
+    "status": "active",
+    "created_at": "T0-30d"
+  },
+  {
+    "user_id": "C002",
+    "email": "diya.nair@example.test",
+    "role": "customer",
+    "display_name": "Diya Nair",
+    "status": "active",
+    "created_at": "T0-30d"
+  },
+  {
+    "user_id": "C003",
+    "email": "rohan.das@example.test",
+    "role": "customer",
+    "display_name": "Rohan Das",
+    "status": "active",
+    "created_at": "T0-30d"
+  },
+  {
+    "user_id": "C004",
+    "email": "meera.iyer@example.test",
+    "role": "customer",
+    "display_name": "Meera Iyer",
+    "status": "active",
+    "created_at": "T0-30d"
+  },
+  {
+    "user_id": "C005",
+    "email": "kabir.singh@example.test",
+    "role": "customer",
+    "display_name": "Kabir Singh",
+    "status": "active",
+    "created_at": "T0-30d"
+  }
+]
+

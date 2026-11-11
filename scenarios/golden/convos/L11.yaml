@@ -1,0 +1,31 @@
+id: L11
+customer: C002
+seed_scenario: SC-05
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: false
+turns:
+  - tap:
+      name: return_order
+      order_id: ORD-2032
+      item_id: ITEM-2032-1
+      reason_code: changed_mind
+expect:
+  intent: return_request
+  tools_called:
+    - propose_return
+  tools_forbidden: []
+  store_state_after: {}
+  proposal:
+    amount_paise: 43900
+    decision: "allow"
+  reply_must_contain_facts:
+    - ORD-2032
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script: []

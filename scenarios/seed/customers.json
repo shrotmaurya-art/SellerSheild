@@ -1,0 +1,38 @@
+[
+  {
+    "customer_id": "C001",
+    "user_id": "C001",
+    "full_name": "Aarav Mehta",
+    "joined_at": "T0-30d",
+    "default_address_json": "{\"address_line1\": \"Flat 402, Sunshine Apts\", \"city\": \"Bengaluru\", \"state\": \"Karnataka\", \"postal_code\": \"560001\", \"phone\": \"+919876543210\"}"
+  },
+  {
+    "customer_id": "C002",
+    "user_id": "C002",
+    "full_name": "Diya Nair",
+    "joined_at": "T0-30d",
+    "default_address_json": "{\"address_line1\": \"12 Green Park\", \"city\": \"Mumbai\", \"state\": \"Maharashtra\", \"postal_code\": \"400001\", \"phone\": \"+919876543211\"}"
+  },
+  {
+    "customer_id": "C003",
+    "user_id": "C003",
+    "full_name": "Rohan Das",
+    "joined_at": "T0-30d",
+    "default_address_json": "{\"address_line1\": \"88 Lake View Road\", \"city\": \"Kolkata\", \"state\": \"West Bengal\", \"postal_code\": \"700029\", \"phone\": \"+919876543212\"}"
+  },
+  {
+    "customer_id": "C004",
+    "user_id": "C004",
+    "full_name": "Meera Iyer",
+    "joined_at": "T0-30d",
+    "default_address_json": "{\"address_line1\": \"45 Temple Street\", \"city\": \"Chennai\", \"state\": \"Tamil Nadu\", \"postal_code\": \"600004\", \"phone\": \"+919876543213\"}"
+  },
+  {
+    "customer_id": "C005",
+    "user_id": "C005",
+    "full_name": "Kabir Singh",
+    "joined_at": "T0-30d",
+    "default_address_json": "{\"address_line1\": \"7 Ring Road\", \"city\": \"New Delhi\", \"state\": \"Delhi\", \"postal_code\": \"110001\", \"phone\": \"+919876543214\"}"
+  }
+]
+

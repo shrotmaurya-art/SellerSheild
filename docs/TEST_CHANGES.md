@@ -1,0 +1,7 @@
+- 2026-11-08 09:57:25 UTC | scripts/test_guard.toml | Refrozen: Allow standard execution markers asyncio and parametrize
+- 2026-11-09 12:07:07 UTC | contracts/openapi-agent.yaml | Refrozen: CHANGE-001 SSE chat and guided actions schema in T1.8
+- 2026-11-09 12:31:52 UTC | agent/tests/test_store_http.py | Refrozen: ruff format and clean unused imports
+- 2026-11-10 15:24:57 UTC | contracts/openapi-agent.yaml | Refrozen: CHANGE-003 customer approval withdraw endpoint in T2.6
+- 2026-11-10 15:32:16 UTC | agent/tests/e2e/test_gate_g1.py | Refrozen: T2.6 implemented /v1/seller/approvals; point G1 501 stub check at /v1/seller/cases
+- 2026-11-11 08:29:32 UTC | agent/tests/test_t35_overview_dev_demo.py | Refrozen: T3.5 Step A fix Principal jti/token_exp and E501 lines
+- 2026-11-11 09:37:08 UTC | agent/tests/test_t35_overview_dev_demo.py | Refrozen: T3.5 Step B completion: overview, dev controls and demo run script

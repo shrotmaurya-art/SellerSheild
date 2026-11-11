@@ -1,0 +1,2601 @@
+openapi: 3.1.0
+info:
+  title: SellerShield Agent API
+  version: 1.0.0
+  description: >
+    Official agent backend API for SellerShield AI (Document 2 specification).
+    Provides customer chat sessions with server-sent events (SSE), proposal confirmation,
+    seller approval cards, case escalation workflows, Decision Trace, Policy Studio,
+    proactive order monitoring, and tamper-evident audit log verification.
+servers:
+  - url: http://localhost:8001/v1
+    description: Local development agent API server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: chat
+    description: Customer chat sessions, streaming LLM dialogue, and push notifications
+  - name: proposals
+    description: Deterministic policy proposals, button confirmations, and execution tracking
+  - name: customer_support
+    description: Customer support cases, human escalation, and customer privacy controls
+  - name: seller_approvals
+    description: Seller approval queue, review cards, and step-up authorized decisions
+  - name: seller_cases
+    description: Seller support inbox, case brief inspection, assignment, and handbacks
+  - name: seller_ops
+    description: Operational overview, live activity SSE, Decision Trace, audit chain, and monitor
+  - name: policy_studio
+    description: Seller policy authoring, versioning, simulation, and owner activation
+  - name: system_and_dev
+    description: Store webhook ingestion, system health probes, and dev test harnesses
+
+paths:
+  # =========================================================================
+  # CHAT
+  # =========================================================================
+  /chat/sessions:
+    post:
+      tags: [chat]
+      summary: Create or resume a customer chat session
+      operationId: create_chat_session
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatSessionRequest'
+      responses:
+        '201':
+          description: Chat session created or resumed with greeting chips
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /chat/sessions/{id}/messages:
+    post:
+      tags: [chat]
+      summary: Send message to chat session and stream agent response
+      operationId: send_chat_message
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+      responses:
+        '200':
+          description: SSE event stream delivering message chunks, tool status, and cards
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream
+          x-sse-events:
+            events:
+              message.delta:
+                description: Text token delta from agent
+                schema:
+                  type: object
+                  additionalProperties: false
+                  required: [delta]
+                  properties:
+                    delta:
+                      type: string
+              tool.status:
+                description: Status update for agent tool execution
+                schema:
+                  type: object
+                  additionalProperties: false
+                  required: [tool_name, status]
+                  properties:
+                    tool_name:
+                      type: string
+                    status:
+                      type: string
+                      enum: [calling, executing, completed, failed]
+              card:
+                description: Interactive UI card rendered inline in chat
+                schema:
+                  $ref: '#/components/schemas/ChatCard'
+              final:
+                description: Finalized message envelope and metadata
+                schema:
+                  type: object
+                  additionalProperties: false
+                  required: [message_id, full_text]
+                  properties:
+                    message_id:
+                      type: string
+                    full_text:
+                      type: string
+              error:
+                description: Safe user-facing error notification
+                schema:
+                  type: object
+                  additionalProperties: false
+                  required: [code, safe_message]
+                  properties:
+                    code:
+                      type: string
+                    safe_message:
+                      type: string
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '429':
+          $ref: '#/components/responses/Error429'
+
+  /chat/sessions/{id}:
+    get:
+      tags: [chat]
+      summary: Get customer-visible message history for chat session
+      operationId: get_chat_session
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chat session history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /chat/stream:
+    get:
+      tags: [chat]
+      summary: Real-time customer push notification SSE stream
+      operationId: stream_chat_push_events
+      x-required-role: customer
+      description: >
+        Delivers push events for customer's active chat session: approval.decided,
+        case.message, case.status, notification.new, proposal.expired, and monitor.notice.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Real-time SSE push stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /me/events:
+    get:
+      tags: [chat]
+      summary: Poll customer events when SSE stream is unavailable
+      operationId: poll_customer_events
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Event cursor timestamp or UUID
+      responses:
+        '200':
+          description: List of new customer-safe events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerEventListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  # =========================================================================
+  # PROPOSALS
+  # =========================================================================
+  /proposals/{id}/confirm:
+    post:
+      tags: [proposals]
+      summary: Customer confirms proposed action via button click
+      operationId: confirm_proposal
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmProposalRequest'
+      responses:
+        '200':
+          description: Proposal execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmProposalResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /proposals/{id}/cancel:
+    post:
+      tags: [proposals]
+      summary: Customer cancels or declines proposed resolution
+      operationId: cancel_proposal
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Proposal cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [proposal_id, status]
+                properties:
+                  proposal_id:
+                    type: string
+                  status:
+                    type: string
+                    example: "cancelled"
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  # =========================================================================
+  # CUSTOMER SUPPORT
+  # =========================================================================
+  /support/request-human:
+    post:
+      tags: [customer_support]
+      summary: Customer requests human support agent escalation
+      operationId: request_human_support
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestHumanSupportRequest'
+      responses:
+        '201':
+          description: Support case created for seller review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerCase'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /me/cases:
+    get:
+      tags: [customer_support]
+      summary: List customer support cases
+      operationId: list_customer_cases
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: List of support cases for the calling customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerCaseListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /me/cases/{id}:
+    get:
+      tags: [customer_support]
+      summary: Get customer support case thread and status
+      operationId: get_customer_case
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Case details and messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerCase'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /me/cases/{id}/messages:
+    post:
+      tags: [customer_support]
+      summary: Customer sends message in support case
+      operationId: send_customer_case_message
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendCaseMessageRequest'
+      responses:
+        '201':
+          description: Message posted to case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseMessage'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /me/memory:
+    delete:
+      tags: [customer_support]
+      summary: Customer requests erasure of long-term personalized memory
+      operationId: erase_customer_memory
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Customer memory erased
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [erased]
+                properties:
+                  erased:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /me/approvals/{proposal_id}/withdraw:
+    post:
+      tags: [proposals]
+      summary: Customer withdraws a pending approval request before seller decision
+      operationId: withdraw_customer_approval
+      x-required-role: customer
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: proposal_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Pending approval withdrawn and store reservation released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawApprovalResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  # =========================================================================
+  # SELLER APPROVALS
+  # =========================================================================
+  /seller/approvals:
+    get:
+      tags: [seller_approvals]
+      summary: List seller approvals queue with status filter and pagination
+      operationId: list_seller_approvals
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, approving, approved, rejected, expired, needs_revalidation, withdrawn]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Paginated list of approvals in queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApprovalListResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/approvals/{id}:
+    get:
+      tags: [seller_approvals]
+      summary: Get approval card details and verification facts
+      operationId: get_seller_approval
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval card with order details, risk facts, and proposed amounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApproval'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/approvals/{id}/decision:
+    post:
+      tags: [seller_approvals]
+      summary: Seller makes approval decision (Approve or Reject)
+      operationId: decide_seller_approval
+      x-required-role: seller
+      description: >
+        Enforces seller limits (staff up to ₹2,000; owner above). Approvals above threshold
+        require 15-min auth_time step-up (returns 401 step_up_required).
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecisionRequest'
+      responses:
+        '200':
+          description: Approval decision recorded and executed against store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApproval'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  # =========================================================================
+  # SELLER CASES
+  # =========================================================================
+  /seller/cases:
+    get:
+      tags: [seller_cases]
+      summary: List escalated cases in seller inbox
+      operationId: list_seller_cases
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, pending_customer, resolved, closed]
+      responses:
+        '200':
+          description: Case list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCaseListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/cases/{id}:
+    get:
+      tags: [seller_cases]
+      summary: Get full support case details
+      operationId: get_seller_case
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Case record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCase'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/cases/{id}/brief:
+    get:
+      tags: [seller_cases]
+      summary: Get deterministic structured brief for support case
+      operationId: get_seller_case_brief
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Structured case brief
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseBrief'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/cases/{id}/messages:
+    post:
+      tags: [seller_cases]
+      summary: Seller sends reply in support case
+      operationId: send_seller_case_message
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendCaseMessageRequest'
+      responses:
+        '201':
+          description: Seller response added to case thread
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseMessage'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/cases/{id}/status:
+    post:
+      tags: [seller_cases]
+      summary: Update support case status
+      operationId: update_seller_case_status
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [open, pending_customer, resolved, closed]
+                resolution_note:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCase'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/cases/{id}/assign:
+    post:
+      tags: [seller_cases]
+      summary: Assign case to staff member
+      operationId: assign_seller_case
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [assigned_to]
+              properties:
+                assigned_to:
+                  type: string
+      responses:
+        '200':
+          description: Case assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCase'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/cases/{id}/handback:
+    post:
+      tags: [seller_cases]
+      summary: Hand human-handled case back to autonomous agent
+      operationId: handback_seller_case
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                instructions:
+                  type: string
+      responses:
+        '200':
+          description: Case handed back to agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCase'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  # =========================================================================
+  # SELLER OPS & OBSERVABILITY
+  # =========================================================================
+  /seller/overview:
+    get:
+      tags: [seller_ops]
+      summary: Get seller dashboard overview KPI tiles
+      operationId: get_seller_overview
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Overview metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerOverviewResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/activity:
+    get:
+      tags: [seller_ops]
+      summary: Real-time SSE stream of seller activity
+      operationId: stream_seller_activity
+      x-required-role: seller
+      description: Real-time stream of approvals, incoming cases, and overdue alerts.
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: SSE stream of seller activity events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/traces/{request_id}:
+    get:
+      tags: [seller_ops]
+      summary: Get Decision Trace for a specific request ID
+      operationId: get_seller_trace
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision Trace joining LLM calls, tool executions, and audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionTraceResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/audit:
+    get:
+      tags: [seller_ops]
+      summary: Query immutable audit event log
+      operationId: list_seller_audit_events
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit log events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/audit/verify:
+    get:
+      tags: [seller_ops]
+      summary: Verify integrity of SHA-256 audit hash chain
+      operationId: verify_seller_audit_chain
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Cryptographic hash chain verification report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditVerifyResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/notifications:
+    get:
+      tags: [seller_ops]
+      summary: List notification outbox messages
+      operationId: list_seller_notifications
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Notification outbox list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/notifications/{id}/retry:
+    post:
+      tags: [seller_ops]
+      summary: Retry failed outbox notification delivery
+      operationId: retry_seller_notification
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Notification retried
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationItem'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /seller/analytics:
+    get:
+      tags: [seller_ops]
+      summary: Get measured agent resolution analytics
+      operationId: get_seller_analytics
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Measured analytics metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerAnalyticsResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/monitor/run:
+    post:
+      tags: [seller_ops]
+      summary: Run proactive order and shipment monitor check
+      operationId: run_seller_monitor
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Monitor scan completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorRun'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  # =========================================================================
+  # POLICY STUDIO
+  # =========================================================================
+  /seller/policies:
+    get:
+      tags: [policy_studio]
+      summary: List all policy versions
+      operationId: list_seller_policies
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Policy version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+    post:
+      tags: [policy_studio]
+      summary: Draft new policy rule version
+      operationId: create_seller_policy
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyRequest'
+      responses:
+        '201':
+          description: New draft policy version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/policies/active:
+    get:
+      tags: [policy_studio]
+      summary: Get currently active policy configuration
+      operationId: get_active_seller_policy
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Currently active policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/policies/{version}:
+    get:
+      tags: [policy_studio]
+      summary: Get policy details by version string
+      operationId: get_seller_policy
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+    put:
+      tags: [policy_studio]
+      summary: Update draft policy rules
+      operationId: update_seller_policy
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePolicyRequest'
+      responses:
+        '200':
+          description: Draft policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /seller/policies/{version}/activate:
+    post:
+      tags: [policy_studio]
+      summary: Activate policy version (owner only, requires 15-min auth step-up)
+      operationId: activate_seller_policy
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Policy version activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+
+  /seller/policies/simulate:
+    post:
+      tags: [policy_studio]
+      summary: Simulate policy against historical orders
+      operationId: simulate_seller_policy
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulatePolicyRequest'
+      responses:
+        '200':
+          description: Simulation results and outcomes breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulatePolicyResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  # =========================================================================
+  # SYSTEM & DEV
+  # =========================================================================
+  /webhooks/store:
+    post:
+      tags: [system_and_dev]
+      summary: Ingest webhook events emitted by Store outbox
+      operationId: receive_store_webhook
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/X-Store-Signature'
+        - $ref: '#/components/parameters/X-Store-Timestamp'
+        - $ref: '#/components/parameters/X-Event-Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEnvelope'
+      responses:
+        '200':
+          description: Webhook event processed or deduplicated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [received, event_id]
+                properties:
+                  received:
+                    type: boolean
+                  event_id:
+                    type: string
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+
+  /healthz:
+    get:
+      tags: [system_and_dev]
+      summary: Service liveness probe
+      operationId: get_agent_healthz
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /readyz:
+    get:
+      tags: [system_and_dev]
+      summary: Service readiness probe
+      operationId: get_agent_readyz
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /seller/monitor/runs:
+    get:
+      tags: [system_and_dev]
+      summary: List monitor run records
+      operationId: list_seller_monitor_runs
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Monitor runs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorRunListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /seller/monitor/runs/{id}:
+    get:
+      tags: [system_and_dev]
+      summary: Get details of a specific monitor run
+      operationId: get_seller_monitor_run
+      x-required-role: seller
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Monitor run details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorRun'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /dev/faults:
+    get:
+      tags: [system_and_dev]
+      summary: Read active development faults
+      operationId: dev_get_faults
+      x-dev-only: true
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Active dev faults
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevFaultsResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+    post:
+      tags: [system_and_dev]
+      summary: Set dev simulated fault toggles (llm_down, audit_fail, slow_llm)
+      operationId: dev_set_faults
+      x-dev-only: true
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevFaultsRequest'
+      responses:
+        '200':
+          description: Faults configured
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [applied]
+                properties:
+                  applied:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /dev/eval/run:
+    post:
+      tags: [system_and_dev]
+      summary: Execute benchmark evaluation suite
+      operationId: dev_run_eval
+      x-dev-only: true
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - $ref: '#/components/parameters/Idempotency-Key'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevEvalRunRequest'
+      responses:
+        '200':
+          description: Evaluation run initiated or completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvalRun'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /dev/eval/runs:
+    get:
+      tags: [system_and_dev]
+      summary: List historical evaluation runs
+      operationId: dev_list_eval_runs
+      x-dev-only: true
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+      responses:
+        '200':
+          description: Evaluation runs history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvalRunListResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+
+  /dev/eval/runs/{id}:
+    get:
+      tags: [system_and_dev]
+      summary: Get detailed evaluation run results
+      operationId: dev_get_eval_run
+      x-dev-only: true
+      x-required-role: owner
+      parameters:
+        - $ref: '#/components/parameters/X-Request-ID'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detailed evaluation benchmark results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvalRun'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+# =========================================================================
+# COMPONENTS
+# =========================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Store-issued RS256 JWT. Claims: sub (user_id), role
+        (customer, seller_owner, seller_staff, service), customer_id,
+        aud: [sellershield-agent, nestkart-api], auth_time.
+
+  parameters:
+    X-Request-ID:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: End-to-end tracing UUID
+      schema:
+        type: string
+    Idempotency-Key:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client mutation idempotency key
+      schema:
+        type: string
+    X-Store-Signature:
+      name: X-Store-Signature
+      in: header
+      required: true
+      description: HMAC-SHA256 signature of timestamp.body using WEBHOOK_SECRET
+      schema:
+        type: string
+    X-Store-Timestamp:
+      name: X-Store-Timestamp
+      in: header
+      required: true
+      description: UTC unix timestamp in seconds when webhook was dispatched
+      schema:
+        type: integer
+    X-Event-Id:
+      name: X-Event-Id
+      in: header
+      required: true
+      description: Outbox event UUID for deduplication
+      schema:
+        type: string
+
+  responses:
+    Error400:
+      description: Validation error or invalid payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error401:
+      description: Unauthorized, missing token, or step-up required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            stepUpRequired:
+              summary: Seller step-up authorization required
+              value:
+                error:
+                  code: "step_up_required"
+                  message: "Action requires recent authentication within 15 minutes"
+                  request_id: "req-stepup-999"
+                  details:
+                    auth_time_required_seconds: 900
+    Error403:
+      description: Forbidden - insufficient permissions or role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error404:
+      description: Resource not found (uniform 404 for nonexistent or unowned items)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error409:
+      description: State conflict, version mismatch, or limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error429:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # -----------------------------------------------------------------------
+    # Error Model
+    # -----------------------------------------------------------------------
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, request_id]
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+            request_id:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+    ErrorCode:
+      type: string
+      enum:
+        - not_found
+        - forbidden
+        - invalid_state
+        - limit_exceeded
+        - duplicate
+        - validation_error
+        - upstream_unavailable
+        - idempotency_mismatch
+        - step_up_required
+
+    # -----------------------------------------------------------------------
+    # Chat Models & Cards
+    # -----------------------------------------------------------------------
+    CreateChatSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        order_context_id:
+          type: string
+
+    ChatSessionResponse:
+      type: object
+      additionalProperties: false
+      required: [session_id, customer_id, created_at, greeting_chips]
+      properties:
+        session_id:
+          type: string
+        customer_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        greeting_chips:
+          type: array
+          items:
+            type: string
+
+    ChatAction:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          enum:
+            - track_order
+            - return_status
+            - refund_status
+            - policy_info
+            - start_return
+            - talk_to_human
+        order_id:
+          type: string
+
+    ChatMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [client_msg_id]
+      properties:
+        text:
+          type: string
+          maxLength: 1000
+        action:
+          $ref: '#/components/schemas/ChatAction'
+        client_msg_id:
+          type: string
+        evidence_ids:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+      anyOf:
+        - required: [text]
+        - required: [action]
+
+    ChatCard:
+      type: object
+      additionalProperties: false
+      required: [card_type, payload]
+      properties:
+        card_type:
+          type: string
+          enum:
+            - order_summary
+            - shipment_timeline
+            - return_preview
+            - confirmation
+            - case_created
+            - chips
+        payload:
+          type: object
+          additionalProperties: true
+
+    ChatHistoryMessage:
+      type: object
+      additionalProperties: false
+      required: [message_id, sender, text, created_at]
+      properties:
+        message_id:
+          type: string
+        sender:
+          type: string
+          enum: [customer, agent, seller]
+        text:
+          type: string
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatCard'
+        created_at:
+          type: string
+          format: date-time
+
+    ChatHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [session_id, messages]
+      properties:
+        session_id:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatHistoryMessage'
+
+    CustomerEvent:
+      type: object
+      additionalProperties: false
+      required: [event_id, type, payload, created_at]
+      properties:
+        event_id:
+          type: string
+        type:
+          type: string
+          enum:
+            - approval.decided
+            - case.message
+            - case.status
+            - notification.new
+            - proposal.expired
+            - monitor.notice
+        payload:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    CustomerEventListResponse:
+      type: object
+      additionalProperties: false
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerEvent'
+        next_cursor:
+          type: string
+          nullable: true
+
+    # -----------------------------------------------------------------------
+    # Proposal Models
+    # -----------------------------------------------------------------------
+    ConfirmProposalRequest:
+      type: object
+      additionalProperties: false
+      required: [proposal_hash]
+      properties:
+        proposal_hash:
+          type: string
+          description: SHA-256 hash of the proposal ensuring deterministic agreement
+
+    ConfirmProposalResponse:
+      type: object
+      additionalProperties: false
+      required: [proposal_id, status, message_key]
+      properties:
+        proposal_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - executing
+            - succeeded
+            - pending_approval
+            - unknown
+            - failed
+        return_id:
+          type: string
+          nullable: true
+        approval_id:
+          type: string
+          nullable: true
+        message_key:
+          type: string
+
+    # -----------------------------------------------------------------------
+    # Case & Support Models
+    # -----------------------------------------------------------------------
+    RequestHumanSupportRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+        order_id:
+          type: string
+        evidence_ids:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+
+    CaseMessage:
+      type: object
+      additionalProperties: false
+      required: [message_id, sender_role, sender_id, text, created_at]
+      properties:
+        message_id:
+          type: string
+        sender_role:
+          type: string
+          enum: [customer, seller, agent]
+        sender_id:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CaseBrief:
+      type: object
+      additionalProperties: false
+      required: [case_id, customer_id, reason, facts, created_at]
+      properties:
+        case_id:
+          type: string
+        customer_id:
+          type: string
+        order_id:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        facts:
+          type: object
+          additionalProperties: true
+        llm_summary:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CustomerCase:
+      type: object
+      additionalProperties: false
+      required: [case_id, customer_id, status, reason, created_at, messages]
+      properties:
+        case_id:
+          type: string
+        customer_id:
+          type: string
+        order_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [open, pending_customer, resolved, closed]
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseMessage'
+
+    CustomerCaseListResponse:
+      type: object
+      additionalProperties: false
+      required: [cases]
+      properties:
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerCase'
+
+    SellerCase:
+      type: object
+      additionalProperties: false
+      required: [case_id, customer_id, status, reason, priority, created_at, messages]
+      properties:
+        case_id:
+          type: string
+        customer_id:
+          type: string
+        order_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [open, pending_customer, resolved, closed]
+        reason:
+          type: string
+        priority:
+          type: string
+          enum: [normal, urgent]
+        assigned_to:
+          type: string
+          nullable: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+        brief:
+          $ref: '#/components/schemas/CaseBrief'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseMessage'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SellerCaseListResponse:
+      type: object
+      additionalProperties: false
+      required: [cases]
+      properties:
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerCase'
+
+    SendCaseMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+
+    # -----------------------------------------------------------------------
+    # Seller Approvals
+    # -----------------------------------------------------------------------
+    WithdrawApprovalResponse:
+      type: object
+      additionalProperties: false
+      required: [approval_id, proposal_id, status]
+      properties:
+        approval_id:
+          type: string
+        proposal_id:
+          type: string
+        status:
+          type: string
+          enum: [withdrawn]
+
+    SellerApproval:
+      type: object
+      additionalProperties: false
+      required:
+        - approval_id
+        - proposal_id
+        - customer_id
+        - order_id
+        - requested_amount_paise
+        - reason
+        - status
+        - expected_version
+        - created_at
+      properties:
+        approval_id:
+          type: string
+        proposal_id:
+          type: string
+        store_id:
+          type: string
+        customer_id:
+          type: string
+        order_id:
+          type: string
+        return_id:
+          type: string
+          nullable: true
+        refund_id:
+          type: string
+          nullable: true
+        requested_amount_paise:
+          type: integer
+          minimum: 0
+        amount_paise:
+          type: integer
+          minimum: 0
+        required_role:
+          type: string
+        policy_version:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, approving, approved, rejected, expired, needs_revalidation, withdrawn]
+        expected_version:
+          type: integer
+        risk_flags:
+          type: array
+          items:
+            type: string
+        store_authorization_ref:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        due_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        decided_by:
+          type: string
+          nullable: true
+        decision_reason:
+          type: string
+          nullable: true
+        last_error:
+          type: string
+          nullable: true
+        method:
+          type: string
+        resolution:
+          type: string
+        reason_code:
+          type: string
+          nullable: true
+        order:
+          type: object
+          additionalProperties: true
+          nullable: true
+        computed_amount:
+          type: object
+          additionalProperties: false
+          nullable: true
+          required: [items_paise, shipping_refund_paise, fee_paise, total_paise, capped]
+          properties:
+            items_paise:
+              type: integer
+              minimum: 0
+            shipping_refund_paise:
+              type: integer
+              minimum: 0
+            fee_paise:
+              type: integer
+              minimum: 0
+            total_paise:
+              type: integer
+              minimum: 0
+            capped:
+              type: boolean
+        rule_results:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        risk:
+          type: object
+          additionalProperties: true
+          nullable: true
+        unverified_customer_statement:
+          type: object
+          additionalProperties: false
+          nullable: true
+          required: [label, text, truncated]
+          properties:
+            label:
+              type: string
+            text:
+              type: string
+            truncated:
+              type: boolean
+        evidence_ids:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
+          enum: [approve, review]
+        recommendation_reason:
+          type: string
+          nullable: true
+        similar_past_decisions:
+          type: object
+          additionalProperties: false
+          nullable: true
+          required: [approved_count, rejected_count, expired_count, withdrawn_count, pending_count, same_order_count]
+          properties:
+            approved_count:
+              type: integer
+              minimum: 0
+            rejected_count:
+              type: integer
+              minimum: 0
+            expired_count:
+              type: integer
+              minimum: 0
+            withdrawn_count:
+              type: integer
+              minimum: 0
+            pending_count:
+              type: integer
+              minimum: 0
+            same_order_count:
+              type: integer
+              minimum: 0
+        revalidation_diff:
+          type: array
+          nullable: true
+          items:
+            type: object
+            additionalProperties: true
+
+    SellerApprovalListResponse:
+      type: object
+      additionalProperties: false
+      required: [approvals, total, limit, offset]
+      properties:
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerApproval'
+        total:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          minimum: 0
+
+    ApprovalDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision, expected_version]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        reason:
+          type: string
+          nullable: true
+          maxLength: 1000
+        expected_version:
+          type: integer
+          minimum: 1
+
+    # -----------------------------------------------------------------------
+    # Seller Operations & Trace
+    # -----------------------------------------------------------------------
+    SellerOverviewResponse:
+      type: object
+      additionalProperties: false
+      required: [pending_approvals_count, open_cases_count, auto_resolved_rate, active_policy_version]
+      properties:
+        pending_approvals_count:
+          type: integer
+        open_cases_count:
+          type: integer
+        auto_resolved_rate:
+          type: number
+        active_policy_version:
+          type: string
+
+    DecisionTraceResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, timestamp, llm_calls, tool_calls, policy_decisions, audit_events]
+      properties:
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        llm_calls:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_calls:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        policy_decisions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        audit_events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      required: [seq, event_id, event_type, actor, request_id, hash, prev_hash, created_at]
+      properties:
+        seq:
+          type: integer
+        event_id:
+          type: string
+        event_type:
+          type: string
+        actor:
+          type: string
+        request_id:
+          type: string
+        hash:
+          type: string
+        prev_hash:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuditEventListResponse:
+      type: object
+      additionalProperties: false
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        next_cursor:
+          type: string
+          nullable: true
+
+    AuditVerifyResponse:
+      type: object
+      additionalProperties: false
+      required: [verified, total_events, head_hash]
+      properties:
+        verified:
+          type: boolean
+        total_events:
+          type: integer
+        head_hash:
+          type: string
+        broken_seq:
+          type: integer
+          nullable: true
+        error:
+          type: string
+          nullable: true
+
+    NotificationItem:
+      type: object
+      additionalProperties: false
+      required: [notification_id, channel, recipient, status, attempts, created_at]
+      properties:
+        notification_id:
+          type: string
+        channel:
+          type: string
+          enum: [email, webhook, chat_push]
+        recipient:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [pending, delivered, failed]
+        attempts:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    NotificationListResponse:
+      type: object
+      additionalProperties: false
+      required: [notifications]
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+
+    SellerAnalyticsResponse:
+      type: object
+      additionalProperties: false
+      required: [conversations_total, auto_resolved_count, escalated_count, average_latency_ms]
+      properties:
+        conversations_total:
+          type: integer
+        auto_resolved_count:
+          type: integer
+        escalated_count:
+          type: integer
+        average_latency_ms:
+          type: integer
+
+    MonitorRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, checked_orders_count, anomalies_detected, created_at]
+      properties:
+        run_id:
+          type: string
+        checked_orders_count:
+          type: integer
+        anomalies_detected:
+          type: integer
+        actions_taken:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    MonitorRunListResponse:
+      type: object
+      additionalProperties: false
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitorRun'
+
+    # -----------------------------------------------------------------------
+    # Policy Models
+    # -----------------------------------------------------------------------
+    Policy:
+      type: object
+      additionalProperties: false
+      required: [version, name, auto_refund_limit_paise, return_window_days, is_active, created_at]
+      properties:
+        version:
+          type: string
+        name:
+          type: string
+        auto_refund_limit_paise:
+          type: integer
+          minimum: 0
+        return_window_days:
+          type: integer
+          minimum: 1
+        free_return_reasons:
+          type: array
+          items:
+            type: string
+        rules:
+          type: object
+          additionalProperties: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        activated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    PolicyListResponse:
+      type: object
+      additionalProperties: false
+      required: [policies]
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+
+    CreatePolicyRequest:
+      type: object
+      additionalProperties: false
+      required: [version, name, auto_refund_limit_paise, return_window_days]
+      properties:
+        version:
+          type: string
+        name:
+          type: string
+        auto_refund_limit_paise:
+          type: integer
+          minimum: 0
+        return_window_days:
+          type: integer
+          minimum: 1
+        free_return_reasons:
+          type: array
+          items:
+            type: string
+        rules:
+          type: object
+          additionalProperties: true
+
+    UpdatePolicyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        auto_refund_limit_paise:
+          type: integer
+          minimum: 0
+        return_window_days:
+          type: integer
+          minimum: 1
+        free_return_reasons:
+          type: array
+          items:
+            type: string
+        rules:
+          type: object
+          additionalProperties: true
+
+    SimulatePolicyRequest:
+      type: object
+      additionalProperties: false
+      required: [policy_version]
+      properties:
+        policy_version:
+          type: string
+        sample_size:
+          type: integer
+          default: 50
+
+    SimulatePolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [simulated_orders_count, auto_approved_count, seller_review_count, total_simulated_refund_paise]
+      properties:
+        simulated_orders_count:
+          type: integer
+        auto_approved_count:
+          type: integer
+        seller_review_count:
+          type: integer
+        total_simulated_refund_paise:
+          type: integer
+          minimum: 0
+
+    # -----------------------------------------------------------------------
+    # System & Dev Models
+    # -----------------------------------------------------------------------
+    WebhookEnvelope:
+      type: object
+      additionalProperties: false
+      required: [event_id, type, occurred_at, resource_version, data]
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        resource_version:
+          type: integer
+        data:
+          type: object
+          additionalProperties: true
+
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          example: "ok"
+        timestamp:
+          type: string
+          format: date-time
+
+    DevFaultsRequest:
+      type: object
+      additionalProperties: false
+      required: [fault_name, enabled]
+      properties:
+        fault_name:
+          type: string
+          enum: [llm_down, audit_fail, slow_llm]
+        enabled:
+          type: boolean
+        params:
+          type: object
+          additionalProperties: true
+
+    DevFaultsResponse:
+      type: object
+      additionalProperties: false
+      required: [faults]
+      properties:
+        faults:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, enabled]
+            properties:
+              name:
+                type: string
+              enabled:
+                type: boolean
+
+    DevEvalRunRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        dataset:
+          type: string
+          default: "scenarios"
+
+    EvalRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, accuracy_pct, test_count, pass_count, status, created_at]
+      properties:
+        run_id:
+          type: string
+        accuracy_pct:
+          type: number
+        test_count:
+          type: integer
+        pass_count:
+          type: integer
+        status:
+          type: string
+          enum: [running, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+
+    EvalRunListResponse:
+      type: object
+      additionalProperties: false
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvalRun'
+

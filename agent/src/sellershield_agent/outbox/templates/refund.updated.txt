@@ -1,0 +1,9 @@
+Subject: Update on your refund for order {order_id}
+
+Hello,
+
+Your refund for order {order_id} has been updated to {status}.
+
+{message}
+
+Thank you for shopping with us.

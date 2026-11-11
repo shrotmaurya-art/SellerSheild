@@ -1,0 +1,9 @@
+Subject: Update on your return request for order {order_id}
+
+Hello,
+
+Your return request for order {order_id} has been {status}.
+
+{message}
+
+Thank you for shopping with us.

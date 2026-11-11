@@ -1,0 +1,83 @@
+[
+  {
+    "sku": "P-101",
+    "name": "Non-stick Cookware Set",
+    "category": "home_kitchen",
+    "price_paise": 120000,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-102",
+    "name": "Copper Water Bottle",
+    "category": "home_kitchen",
+    "price_paise": 45000,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-103",
+    "name": "Cotton Bedsheet Set",
+    "category": "home_kitchen",
+    "price_paise": 89900,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-104",
+    "name": "Wireless Earbuds Lite",
+    "category": "electronics",
+    "price_paise": 79900,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-105",
+    "name": "Smart LED Desk Lamp",
+    "category": "electronics",
+    "price_paise": 200000,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-201",
+    "name": "Cotton Kurta",
+    "category": "apparel",
+    "price_paise": 69900,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-202",
+    "name": "Silk Dupatta",
+    "category": "apparel",
+    "price_paise": 34900,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-203",
+    "name": "Running T-shirt",
+    "category": "apparel",
+    "price_paise": 49900,
+    "hygiene_sensitive": false,
+    "final_sale": false
+  },
+  {
+    "sku": "P-301",
+    "name": "Vitamin C Face Serum",
+    "category": "beauty",
+    "price_paise": 55000,
+    "hygiene_sensitive": true,
+    "final_sale": false
+  },
+  {
+    "sku": "P-302",
+    "name": "Custom Name Mug",
+    "category": "custom",
+    "price_paise": 39900,
+    "hygiene_sensitive": false,
+    "final_sale": true
+  }
+]
+

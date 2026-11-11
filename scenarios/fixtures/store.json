@@ -1,0 +1,1580 @@
+{
+  "customers": [
+    {
+      "customer_id": "C001",
+      "user_id": "USR-001",
+      "full_name": "Aarav Mehta",
+      "email": "aarav.mehta@example.test",
+      "account_age_days": 180,
+      "address": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      }
+    },
+    {
+      "customer_id": "C002",
+      "user_id": "USR-002",
+      "full_name": "Diya Nair",
+      "email": "diya.nair@example.test",
+      "account_age_days": 120,
+      "address": {
+        "full_name": "Diya Nair",
+        "line1": "12B, Marine Drive",
+        "line2": null,
+        "city": "Kochi",
+        "state": "Kerala",
+        "postal_code": "682011",
+        "country": "IN",
+        "phone": "+919876543211"
+      }
+    },
+    {
+      "customer_id": "C003",
+      "user_id": "USR-003",
+      "full_name": "Rohan Das",
+      "email": "rohan.das@example.test",
+      "account_age_days": 60,
+      "address": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      }
+    },
+    {
+      "customer_id": "C004",
+      "user_id": "USR-004",
+      "full_name": "Meera Iyer",
+      "email": "meera.iyer@example.test",
+      "account_age_days": 90,
+      "address": {
+        "full_name": "Meera Iyer",
+        "line1": "Flat 304, R.A. Puram",
+        "line2": null,
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "postal_code": "600028",
+        "country": "IN",
+        "phone": "+919876543213"
+      }
+    },
+    {
+      "customer_id": "C005",
+      "user_id": "USR-005",
+      "full_name": "Kabir Singh",
+      "email": "kabir.singh@example.test",
+      "account_age_days": 30,
+      "address": {
+        "full_name": "Kabir Singh",
+        "line1": "House 15, Sector 17",
+        "line2": null,
+        "city": "Chandigarh",
+        "state": "Punjab",
+        "postal_code": "160017",
+        "country": "IN",
+        "phone": "+919876543214"
+      }
+    }
+  ],
+  "products": [
+    {
+      "sku": "P-101",
+      "name": "Non-stick Cookware Set",
+      "category": "home_kitchen",
+      "unit_price_paise": 120000,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-102",
+      "name": "Copper Water Bottle",
+      "category": "home_kitchen",
+      "unit_price_paise": 45000,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-103",
+      "name": "Cotton Bedsheet Set",
+      "category": "home_kitchen",
+      "unit_price_paise": 89900,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-104",
+      "name": "Wireless Earbuds Lite",
+      "category": "electronics",
+      "unit_price_paise": 79900,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-105",
+      "name": "Smart LED Desk Lamp",
+      "category": "electronics",
+      "unit_price_paise": 200000,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-201",
+      "name": "Cotton Kurta",
+      "category": "apparel",
+      "unit_price_paise": 69900,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-202",
+      "name": "Silk Dupatta",
+      "category": "apparel",
+      "unit_price_paise": 34900,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-203",
+      "name": "Running T-shirt",
+      "category": "apparel",
+      "unit_price_paise": 49900,
+      "hygiene_sensitive": false,
+      "final_sale": false
+    },
+    {
+      "sku": "P-301",
+      "name": "Vitamin C Face Serum",
+      "category": "beauty",
+      "unit_price_paise": 55000,
+      "hygiene_sensitive": true,
+      "final_sale": false
+    },
+    {
+      "sku": "P-302",
+      "name": "Custom Name Mug",
+      "category": "custom",
+      "unit_price_paise": 39900,
+      "hygiene_sensitive": false,
+      "final_sale": true
+    }
+  ],
+  "orders": [
+    {
+      "order_id": "ORD-1048",
+      "customer_id": "C001",
+      "status": "shipped",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 89900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 89900,
+      "placed_at_offset": "T0-1d",
+      "shipped_at_offset": "T0-1d",
+      "delivered_at_offset": null,
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1048-1",
+          "sku": "P-103",
+          "name": "Cotton Bedsheet Set",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 89900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 89900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-1042",
+      "customer_id": "C001",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 120000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 120000,
+      "placed_at_offset": "T0-5d",
+      "shipped_at_offset": "T0-4d",
+      "delivered_at_offset": "T0-3d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1042-1",
+          "sku": "P-101",
+          "name": "Non-stick Cookware Set",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 120000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 120000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-2032",
+      "customer_id": "C002",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-4d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-2032-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Diya Nair",
+        "line1": "12B, Marine Drive",
+        "line2": null,
+        "city": "Kochi",
+        "state": "Kerala",
+        "postal_code": "682011",
+        "country": "IN",
+        "phone": "+919876543211"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-1051",
+      "customer_id": "C001",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 79900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 79900,
+      "placed_at_offset": "T0-19d",
+      "shipped_at_offset": "T0-18d",
+      "delivered_at_offset": "T0-16d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1051-1",
+          "sku": "P-104",
+          "name": "Wireless Earbuds Lite",
+          "category": "electronics",
+          "qty": 1,
+          "unit_price_paise": 79900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 79900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-1060",
+      "customer_id": "C001",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 55000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 55000,
+      "placed_at_offset": "T0-4d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1060-1",
+          "sku": "P-301",
+          "name": "Vitamin C Face Serum",
+          "category": "beauty",
+          "qty": 1,
+          "unit_price_paise": 55000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 55000,
+          "flags": {
+            "hygiene_sensitive": true
+          }
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-2031",
+      "customer_id": "C002",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 174700,
+      "discount_paise": 10000,
+      "shipping_fee_paise": 0,
+      "total_paise": 164700,
+      "placed_at_offset": "T0-3d",
+      "shipped_at_offset": "T0-2d",
+      "delivered_at_offset": "T0-1d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-2031-1",
+          "sku": "P-201",
+          "name": "Cotton Kurta",
+          "category": "apparel",
+          "qty": 2,
+          "unit_price_paise": 69900,
+          "discount_alloc_paise": 8002,
+          "line_paid_paise": 131798,
+          "flags": {}
+        },
+        {
+          "item_id": "ITEM-2031-2",
+          "sku": "P-202",
+          "name": "Silk Dupatta",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 34900,
+          "discount_alloc_paise": 1998,
+          "line_paid_paise": 32902,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Diya Nair",
+        "line1": "12B, Marine Drive",
+        "line2": null,
+        "city": "Kochi",
+        "state": "Kerala",
+        "postal_code": "682011",
+        "country": "IN",
+        "phone": "+919876543211"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3050",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-5d",
+      "shipped_at_offset": "T0-4d",
+      "delivered_at_offset": "T0-3d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3050-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-2040",
+      "customer_id": "C002",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "partially_refunded",
+      "subtotal_paise": 90000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 90000,
+      "placed_at_offset": "T0-15d",
+      "shipped_at_offset": "T0-14d",
+      "delivered_at_offset": "T0-12d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-2040-1",
+          "sku": "P-102",
+          "name": "Copper Water Bottle",
+          "category": "home_kitchen",
+          "qty": 2,
+          "unit_price_paise": 45000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 90000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Diya Nair",
+        "line1": "12B, Marine Drive",
+        "line2": null,
+        "city": "Kochi",
+        "state": "Kerala",
+        "postal_code": "682011",
+        "country": "IN",
+        "phone": "+919876543211"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-1061",
+      "customer_id": "C001",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 45000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 45000,
+      "placed_at_offset": "T0-3d",
+      "shipped_at_offset": "T0-2d",
+      "delivered_at_offset": "T0-1d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1061-1",
+          "sku": "P-102",
+          "name": "Copper Water Bottle",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 45000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 45000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-2037",
+      "customer_id": "C002",
+      "status": "shipped",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 200000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 200000,
+      "placed_at_offset": "T0-10d",
+      "shipped_at_offset": "T0-9d",
+      "delivered_at_offset": null,
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-2037-1",
+          "sku": "P-105",
+          "name": "Smart LED Desk Lamp",
+          "category": "electronics",
+          "qty": 1,
+          "unit_price_paise": 200000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 200000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Diya Nair",
+        "line1": "12B, Marine Drive",
+        "line2": null,
+        "city": "Kochi",
+        "state": "Kerala",
+        "postal_code": "682011",
+        "country": "IN",
+        "phone": "+919876543211"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-5001",
+      "customer_id": "C005",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-4d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-5001-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Kabir Singh",
+        "line1": "House 15, Sector 17",
+        "line2": null,
+        "city": "Chandigarh",
+        "state": "Punjab",
+        "postal_code": "160017",
+        "country": "IN",
+        "phone": "+919876543214"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3010",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-4d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3010-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3011",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 245000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 245000,
+      "placed_at_offset": "T0-4d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3011-1",
+          "sku": "P-105",
+          "name": "Smart LED Desk Lamp",
+          "category": "electronics",
+          "qty": 1,
+          "unit_price_paise": 200000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 200000,
+          "flags": {}
+        },
+        {
+          "item_id": "ITEM-3011-2",
+          "sku": "P-102",
+          "name": "Copper Water Bottle",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 45000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 45000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-4020",
+      "customer_id": "C004",
+      "status": "delivered",
+      "payment_method": "cod",
+      "payment_status": "cod_collected",
+      "subtotal_paise": 69900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 69900,
+      "placed_at_offset": "T0-5d",
+      "shipped_at_offset": "T0-3d",
+      "delivered_at_offset": "T0-2d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-4020-1",
+          "sku": "P-201",
+          "name": "Cotton Kurta",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 69900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 69900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Meera Iyer",
+        "line1": "Flat 304, R.A. Puram",
+        "line2": null,
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "postal_code": "600028",
+        "country": "IN",
+        "phone": "+919876543213"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-4021",
+      "customer_id": "C004",
+      "status": "placed",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 89900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 89900,
+      "placed_at_offset": "T0-2h",
+      "shipped_at_offset": null,
+      "delivered_at_offset": null,
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-4021-1",
+          "sku": "P-103",
+          "name": "Cotton Bedsheet Set",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 89900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 89900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Meera Iyer",
+        "line1": "Flat 304, R.A. Puram",
+        "line2": null,
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "postal_code": "600028",
+        "country": "IN",
+        "phone": "+919876543213"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-1070",
+      "customer_id": "C001",
+      "status": "shipped",
+      "payment_method": "prepaid",
+      "payment_status": "paid",
+      "subtotal_paise": 99800,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 99800,
+      "placed_at_offset": "T0-7d",
+      "shipped_at_offset": "T0-6d",
+      "delivered_at_offset": null,
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-1070-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 2,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 99800,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Aarav Mehta",
+        "line1": "Flat 402, Green Glen Layout, Bellandur",
+        "line2": "Near Outer Ring Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "postal_code": "560103",
+        "country": "IN",
+        "phone": "+919876543210"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3001",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "refunded",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-28d",
+      "shipped_at_offset": "T0-27d",
+      "delivered_at_offset": "T0-25d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3001-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3002",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "refunded",
+      "subtotal_paise": 45000,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 45000,
+      "placed_at_offset": "T0-23d",
+      "shipped_at_offset": "T0-22d",
+      "delivered_at_offset": "T0-20d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3002-1",
+          "sku": "P-102",
+          "name": "Copper Water Bottle",
+          "category": "home_kitchen",
+          "qty": 1,
+          "unit_price_paise": 45000,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 45000,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3003",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "refunded",
+      "subtotal_paise": 69900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 69900,
+      "placed_at_offset": "T0-18d",
+      "shipped_at_offset": "T0-17d",
+      "delivered_at_offset": "T0-15d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3003-1",
+          "sku": "P-201",
+          "name": "Cotton Kurta",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 69900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 69900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3004",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "refunded",
+      "subtotal_paise": 79900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 79900,
+      "placed_at_offset": "T0-11d",
+      "shipped_at_offset": "T0-10d",
+      "delivered_at_offset": "T0-8d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3004-1",
+          "sku": "P-104",
+          "name": "Wireless Earbuds Lite",
+          "category": "electronics",
+          "qty": 1,
+          "unit_price_paise": 79900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 79900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    },
+    {
+      "order_id": "ORD-3005",
+      "customer_id": "C003",
+      "status": "delivered",
+      "payment_method": "prepaid",
+      "payment_status": "refunded",
+      "subtotal_paise": 49900,
+      "discount_paise": 0,
+      "shipping_fee_paise": 0,
+      "total_paise": 49900,
+      "placed_at_offset": "T0-7d",
+      "shipped_at_offset": "T0-6d",
+      "delivered_at_offset": "T0-5d",
+      "cancelled_at_offset": null,
+      "items": [
+        {
+          "item_id": "ITEM-3005-1",
+          "sku": "P-203",
+          "name": "Running T-shirt",
+          "category": "apparel",
+          "qty": 1,
+          "unit_price_paise": 49900,
+          "discount_alloc_paise": 0,
+          "line_paid_paise": 49900,
+          "flags": {}
+        }
+      ],
+      "ship_to": {
+        "full_name": "Rohan Das",
+        "line1": "74/1 Salt Lake Sector V",
+        "line2": null,
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "postal_code": "700091",
+        "country": "IN",
+        "phone": "+919876543212"
+      },
+      "version": 1
+    }
+  ],
+  "shipments": [
+    {
+      "shipment_id": "SHP-1048",
+      "order_id": "ORD-1048",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1048",
+      "status": "in_transit",
+      "eta_at_offset": "T0+2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-1048-1",
+          "occurred_at_offset": "T0-1d",
+          "status": "picked_up",
+          "location": "Warehouse Bengaluru",
+          "note": "Package picked up by carrier"
+        },
+        {
+          "event_id": "EVT-1048-2",
+          "occurred_at_offset": "T0-12h",
+          "status": "in_transit",
+          "location": "Bengaluru Hub",
+          "note": "In transit to destination"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-1042",
+      "order_id": "ORD-1042",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1042",
+      "status": "delivered",
+      "eta_at_offset": "T0-3d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-1042-1",
+          "occurred_at_offset": "T0-4d",
+          "status": "picked_up",
+          "location": "Warehouse Bengaluru",
+          "note": "Package picked up"
+        },
+        {
+          "event_id": "EVT-1042-2",
+          "occurred_at_offset": "T0-3d",
+          "status": "delivered",
+          "location": "Bengaluru",
+          "note": "Delivered to customer"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-2032",
+      "order_id": "ORD-2032",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-2032",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-2032-1",
+          "occurred_at_offset": "T0-3d",
+          "status": "picked_up",
+          "location": "Warehouse Kochi",
+          "note": "Picked up"
+        },
+        {
+          "event_id": "EVT-2032-2",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Kochi",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-1051",
+      "order_id": "ORD-1051",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1051",
+      "status": "delivered",
+      "eta_at_offset": "T0-16d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-1051-1",
+          "occurred_at_offset": "T0-16d",
+          "status": "delivered",
+          "location": "Bengaluru",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-1060",
+      "order_id": "ORD-1060",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1060",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-1060-1",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Bengaluru",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-2031",
+      "order_id": "ORD-2031",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-2031",
+      "status": "delivered",
+      "eta_at_offset": "T0-1d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-2031-1",
+          "occurred_at_offset": "T0-1d",
+          "status": "delivered",
+          "location": "Kochi",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-3050",
+      "order_id": "ORD-3050",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-3050",
+      "status": "delivered",
+      "eta_at_offset": "T0-3d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-3050-1",
+          "occurred_at_offset": "T0-3d",
+          "status": "delivered",
+          "location": "Kolkata",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-2040",
+      "order_id": "ORD-2040",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-2040",
+      "status": "delivered",
+      "eta_at_offset": "T0-12d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-2040-1",
+          "occurred_at_offset": "T0-12d",
+          "status": "delivered",
+          "location": "Kochi",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-1061",
+      "order_id": "ORD-1061",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1061",
+      "status": "delivered",
+      "eta_at_offset": "T0-1d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-1061-1",
+          "occurred_at_offset": "T0-1d",
+          "status": "delivered",
+          "location": "Bengaluru",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-2037",
+      "order_id": "ORD-2037",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-2037",
+      "status": "exception",
+      "eta_at_offset": "T0-4d",
+      "delayed": true,
+      "events": [
+        {
+          "event_id": "EVT-2037-1",
+          "occurred_at_offset": "T0-9d",
+          "status": "picked_up",
+          "location": "Warehouse Kochi",
+          "note": "Picked up"
+        },
+        {
+          "event_id": "EVT-2037-2",
+          "occurred_at_offset": "T0-5d",
+          "status": "exception",
+          "location": "Kochi Transit Hub",
+          "note": "Delayed due to weather disruption"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-5001",
+      "order_id": "ORD-5001",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-5001",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-5001-1",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Chandigarh",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-3010",
+      "order_id": "ORD-3010",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-3010",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-3010-1",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Kolkata",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-3011",
+      "order_id": "ORD-3011",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-3011",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-3011-1",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Kolkata",
+          "note": "Delivered"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-4020",
+      "order_id": "ORD-4020",
+      "carrier": "Delhivery",
+      "tracking_no": "TRK-4020",
+      "status": "delivered",
+      "eta_at_offset": "T0-2d",
+      "delayed": false,
+      "events": [
+        {
+          "event_id": "EVT-4020-1",
+          "occurred_at_offset": "T0-2d",
+          "status": "delivered",
+          "location": "Chennai",
+          "note": "Delivered and COD collected"
+        }
+      ]
+    },
+    {
+      "shipment_id": "SHP-1070",
+      "order_id": "ORD-1070",
+      "carrier": "BlueDart",
+      "tracking_no": "TRK-1070",
+      "status": "lost",
+      "eta_at_offset": "T0-2d",
+      "delayed": true,
+      "events": [
+        {
+          "event_id": "EVT-1070-1",
+          "occurred_at_offset": "T0-6d",
+          "status": "picked_up",
+          "location": "Warehouse Bengaluru",
+          "note": "Picked up"
+        },
+        {
+          "event_id": "EVT-1070-2",
+          "occurred_at_offset": "T0-3d",
+          "status": "lost",
+          "location": "Bengaluru Hub",
+          "note": "Carrier investigation confirmed package lost"
+        }
+      ]
+    }
+  ],
+  "returns": [
+    {
+      "return_id": "RET-9050",
+      "order_id": "ORD-3050",
+      "customer_id": "C003",
+      "status": "requested",
+      "reason_code": "defective",
+      "reason_text": "Item does not work as expected",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3050-1",
+          "qty": 1,
+          "condition_note": "Seam stitching coming undone"
+        }
+      ],
+      "approved_by": null,
+      "created_at_offset": "T0-1d",
+      "updated_at_offset": null,
+      "version": 1
+    },
+    {
+      "return_id": "RET-3001",
+      "order_id": "ORD-3001",
+      "customer_id": "C003",
+      "status": "completed",
+      "reason_code": "defective",
+      "reason_text": "Defective item",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3001-1",
+          "qty": 1,
+          "condition_note": null
+        }
+      ],
+      "approved_by": "USR-S001",
+      "created_at_offset": "T0-24d",
+      "updated_at_offset": "T0-23d",
+      "version": 2
+    },
+    {
+      "return_id": "RET-3002",
+      "order_id": "ORD-3002",
+      "customer_id": "C003",
+      "status": "completed",
+      "reason_code": "changed_mind",
+      "reason_text": "No longer needed",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3002-1",
+          "qty": 1,
+          "condition_note": null
+        }
+      ],
+      "approved_by": "USR-S001",
+      "created_at_offset": "T0-19d",
+      "updated_at_offset": "T0-18d",
+      "version": 2
+    },
+    {
+      "return_id": "RET-3003",
+      "order_id": "ORD-3003",
+      "customer_id": "C003",
+      "status": "completed",
+      "reason_code": "wrong_item",
+      "reason_text": "Wrong color received",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3003-1",
+          "qty": 1,
+          "condition_note": null
+        }
+      ],
+      "approved_by": "USR-S001",
+      "created_at_offset": "T0-14d",
+      "updated_at_offset": "T0-13d",
+      "version": 2
+    },
+    {
+      "return_id": "RET-3004",
+      "order_id": "ORD-3004",
+      "customer_id": "C003",
+      "status": "completed",
+      "reason_code": "defective",
+      "reason_text": "One earbud not charging",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3004-1",
+          "qty": 1,
+          "condition_note": null
+        }
+      ],
+      "approved_by": "USR-S001",
+      "created_at_offset": "T0-7d",
+      "updated_at_offset": "T0-6d",
+      "version": 2
+    },
+    {
+      "return_id": "RET-3005",
+      "order_id": "ORD-3005",
+      "customer_id": "C003",
+      "status": "completed",
+      "reason_code": "not_as_described",
+      "reason_text": "Size smaller than chart",
+      "resolution": "refund",
+      "items": [
+        {
+          "item_id": "ITEM-3005-1",
+          "qty": 1,
+          "condition_note": null
+        }
+      ],
+      "approved_by": "USR-S001",
+      "created_at_offset": "T0-4d",
+      "updated_at_offset": "T0-3d",
+      "version": 2
+    }
+  ],
+  "refunds": [
+    {
+      "refund_id": "RFD-2040",
+      "order_id": "ORD-2040",
+      "return_id": null,
+      "customer_id": "C002",
+      "amount_paise": 40000,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_2040",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 40000,
+      "authorized_at_offset": "T0-10d",
+      "failure_reason": null,
+      "created_at_offset": "T0-10d",
+      "updated_at_offset": "T0-10d"
+    },
+    {
+      "refund_id": "RFD-3001",
+      "order_id": "ORD-3001",
+      "return_id": "RET-3001",
+      "customer_id": "C003",
+      "amount_paise": 49900,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_3001",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 49900,
+      "authorized_at_offset": "T0-23d",
+      "failure_reason": null,
+      "created_at_offset": "T0-23d",
+      "updated_at_offset": "T0-23d"
+    },
+    {
+      "refund_id": "RFD-3002",
+      "order_id": "ORD-3002",
+      "return_id": "RET-3002",
+      "customer_id": "C003",
+      "amount_paise": 45000,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_3002",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 45000,
+      "authorized_at_offset": "T0-18d",
+      "failure_reason": null,
+      "created_at_offset": "T0-18d",
+      "updated_at_offset": "T0-18d"
+    },
+    {
+      "refund_id": "RFD-3003",
+      "order_id": "ORD-3003",
+      "return_id": "RET-3003",
+      "customer_id": "C003",
+      "amount_paise": 69900,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_3003",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 69900,
+      "authorized_at_offset": "T0-13d",
+      "failure_reason": null,
+      "created_at_offset": "T0-13d",
+      "updated_at_offset": "T0-13d"
+    },
+    {
+      "refund_id": "RFD-3004",
+      "order_id": "ORD-3004",
+      "return_id": "RET-3004",
+      "customer_id": "C003",
+      "amount_paise": 79900,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_3004",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 79900,
+      "authorized_at_offset": "T0-6d",
+      "failure_reason": null,
+      "created_at_offset": "T0-6d",
+      "updated_at_offset": "T0-6d"
+    },
+    {
+      "refund_id": "RFD-3005",
+      "order_id": "ORD-3005",
+      "return_id": "RET-3005",
+      "customer_id": "C003",
+      "amount_paise": 49900,
+      "method": "original",
+      "status": "completed",
+      "gateway_ref": "gw_ref_3005",
+      "authorized_by": "USR-S001",
+      "authorized_amount_paise": 49900,
+      "authorized_at_offset": "T0-3d",
+      "failure_reason": null,
+      "created_at_offset": "T0-3d",
+      "updated_at_offset": "T0-3d"
+    }
+  ],
+  "risk_facts": {
+    "C001": {
+      "customer_id": "C001",
+      "returns_30d": 0,
+      "refund_ratio_90d_bp": 0,
+      "account_age_days": 180,
+      "refunded_30d_paise": 0
+    },
+    "C002": {
+      "customer_id": "C002",
+      "returns_30d": 1,
+      "refund_ratio_90d_bp": 792,
+      "account_age_days": 120,
+      "refunded_30d_paise": 40000
+    },
+    "C003": {
+      "customer_id": "C003",
+      "returns_30d": 5,
+      "refund_ratio_90d_bp": 4955,
+      "account_age_days": 60,
+      "refunded_30d_paise": 294600
+    },
+    "C004": {
+      "customer_id": "C004",
+      "returns_30d": 0,
+      "refund_ratio_90d_bp": 0,
+      "account_age_days": 90,
+      "refunded_30d_paise": 0
+    },
+    "C005": {
+      "customer_id": "C005",
+      "returns_30d": 0,
+      "refund_ratio_90d_bp": 0,
+      "account_age_days": 30,
+      "refunded_30d_paise": 0
+    }
+  }
+}

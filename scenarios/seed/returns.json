@@ -1,0 +1,68 @@
+[
+  {
+    "return_id": "RET-9050",
+    "order_id": "ORD-3050",
+    "customer_id": "C003",
+    "status": "requested",
+    "reason_code": "defective",
+    "reason_text": "Bottle cap leaking",
+    "resolution": "refund",
+    "requested_via": "chat",
+    "approved_by": null,
+    "created_at": "T0-1d",
+    "updated_at": "T0-1d"
+  },
+  {
+    "return_id": "RET-3001",
+    "order_id": "ORD-3001",
+    "customer_id": "C003",
+    "status": "completed",
+    "reason_code": "defective",
+    "reason_text": "Defective item",
+    "resolution": "refund",
+    "requested_via": "portal",
+    "approved_by": "S001",
+    "created_at": "T0-24d",
+    "updated_at": "T0-22d"
+  },
+  {
+    "return_id": "RET-3002",
+    "order_id": "ORD-3002",
+    "customer_id": "C003",
+    "status": "completed",
+    "reason_code": "size_fit",
+    "reason_text": "Wrong size",
+    "resolution": "refund",
+    "requested_via": "portal",
+    "approved_by": "S001",
+    "created_at": "T0-19d",
+    "updated_at": "T0-17d"
+  },
+  {
+    "return_id": "RET-3003",
+    "order_id": "ORD-3003",
+    "customer_id": "C003",
+    "status": "completed",
+    "reason_code": "changed_mind",
+    "reason_text": "No longer needed",
+    "resolution": "refund",
+    "requested_via": "portal",
+    "approved_by": "S002",
+    "created_at": "T0-14d",
+    "updated_at": "T0-12d"
+  },
+  {
+    "return_id": "RET-3004",
+    "order_id": "ORD-3004",
+    "customer_id": "C003",
+    "status": "completed",
+    "reason_code": "defective",
+    "reason_text": "Color faded",
+    "resolution": "refund",
+    "requested_via": "portal",
+    "approved_by": "S001",
+    "created_at": "T0-9d",
+    "updated_at": "T0-7d"
+  }
+]
+

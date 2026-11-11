@@ -1,0 +1,9 @@
+Subject: New message regarding case: {case_id}
+
+Hello,
+
+You have received a new update regarding case {case_id}:
+
+{message}
+
+Thank you for your patience.

@@ -1,0 +1,36 @@
+id: L10
+customer: C001
+seed_scenario: SC-01
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: false
+turns:
+  - say: "Let me speak to a human agent immediately."
+expect:
+  intent: human_request
+  tools_called:
+    - create_case
+  tools_forbidden:
+    - propose_return
+    - propose_refund
+  store_state_after:
+    cases_count: 1
+  proposal: null
+  reply_must_contain_facts: []
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script:
+  - intent: human_request
+    confidence: 0.95
+    order_ids: []
+    item_ids: []
+    reason_code: null
+    language: en
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []

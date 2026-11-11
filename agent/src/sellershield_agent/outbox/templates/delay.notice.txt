@@ -1,0 +1,9 @@
+Subject: Delivery update for order {order_id}
+
+Hello,
+
+Your order {order_id} has experienced a delivery delay.
+
+{message}
+
+We apologize for any inconvenience.

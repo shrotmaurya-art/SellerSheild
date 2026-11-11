@@ -1,0 +1,43 @@
+[
+  {
+    "event_id": "EVT-1048-1",
+    "shipment_id": "SHP-1048",
+    "ts": "T0-1d",
+    "status": "in_transit",
+    "location": "Bengaluru Hub",
+    "note": "Package received at carrier facility"
+  },
+  {
+    "event_id": "EVT-2037-1",
+    "shipment_id": "SHP-2037",
+    "ts": "T0-9d",
+    "status": "picked_up",
+    "location": "Mumbai Hub",
+    "note": "Shipment picked up from seller"
+  },
+  {
+    "event_id": "EVT-2037-2",
+    "shipment_id": "SHP-2037",
+    "ts": "T0-4d",
+    "status": "exception",
+    "location": "Mumbai Hub",
+    "note": "address verification pending"
+  },
+  {
+    "event_id": "EVT-1070-1",
+    "shipment_id": "SHP-1070",
+    "ts": "T0-8d",
+    "status": "in_transit",
+    "location": "Delhi Sorting Center",
+    "note": "Package departed facility"
+  },
+  {
+    "event_id": "EVT-1070-2",
+    "shipment_id": "SHP-1070",
+    "ts": "T0-2d",
+    "status": "lost",
+    "location": "Delhi Sorting Center",
+    "note": "Package lost in transit"
+  }
+]
+

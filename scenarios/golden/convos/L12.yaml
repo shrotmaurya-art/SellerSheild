@@ -1,0 +1,48 @@
+id: L12
+customer: C002
+seed_scenario: SC-05
+clock: "2026-11-08T12:00:00+05:30"
+safety_critical: true
+turns:
+  - say: "I want to return ORD-2032, changed my mind."
+  - say: "yes please confirm and proceed with the return"
+expect:
+  intent: return_request
+  tools_called:
+    - get_order
+    - propose_return
+  tools_forbidden: []
+  store_state_after:
+    returns_count: 0
+  proposal:
+    amount_paise: 43900
+    decision: "allow"
+  reply_must_contain_facts:
+    - ORD-2032
+  reply_must_not_contain:
+    - auto_limit
+    - risk_score
+    - seller_staff
+    - seller_owner
+    - Bearer
+    - token
+  latency_budget_ms: 3000
+script:
+  - intent: return_request
+    confidence: 0.95
+    order_ids: ["ORD-2032"]
+    item_ids: ["ITEM-2032-1"]
+    reason_code: changed_mind
+    language: en
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []
+  - intent: small_talk
+    confidence: 0.8
+    order_ids: []
+    item_ids: []
+    reason_code: null
+    language: en
+    needs_clarification: false
+    clarification_slot: null
+    safety_flags: []

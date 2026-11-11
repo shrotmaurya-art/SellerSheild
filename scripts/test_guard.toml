@@ -1,0 +1,29 @@
+# Test guard configuration
+# Enforces test suite integrity and prevents test weakening.
+
+[guard]
+# Glob patterns for files subject to frozen hash verification
+frozen_globs = [
+    "agent/tests/**/*.py",
+    "tests/guard/**/*.py",
+    "scenarios/fixtures/**",
+    "scenarios/golden/**",
+    "scenarios/redteam/**",
+    "contracts/*.yaml",
+    "agent/src/sellershield_agent/policy/versions/*.json",
+    "scripts/test_guard.py",
+    "scripts/test_guard.toml",
+]
+
+# Manifest and tracking files
+manifest_file = "tests/FROZEN.sha256"
+count_file = "tests/FROZEN.count"
+changes_file = "docs/TEST_CHANGES.md"
+
+# Pytest and justfile configuration
+pyproject_path = "agent/pyproject.toml"
+justfile_path = "justfile"
+
+# Permitted test markers (custom filtering markers: live, store)
+allowed_markers = ["live", "store", "asyncio", "parametrize", "usefixtures", "filterwarnings"]
+allowed_addopts_marker = "-m 'not live and not store'"
