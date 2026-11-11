@@ -1,8 +1,24 @@
 # STATE (handoff note; update at the end of every session)
-Updated: 2026-11-11 21:05 IST
-Phase: 4 (Hardening, Security & Evaluation) - IN PROGRESS
-Current task: TASK L4.3 - demo_check: the demo beats as one command (DONE - NO COMMIT)
+Updated: 2026-11-11 23:10 IST
+Phase: BT-1 (Full Browser Acceptance Test, Diagnose & Fix) - IN PROGRESS
+Current task: TASK BT-1 - Browser Acceptance Test & Fixes
 Last completed:
+- BT-1 Fix 2 & 3: Typo matching, session memory, order listing and partial quantity returns (`[COMMIT local only]`).
+  - Resolved `BUG-015` (typo tolerance `ordr`/`odr`, multi-turn context memory for active order ID `ORD-1048`).
+  - Resolved `BUG-016` (order listing queries render `template_orders_list` and interactive order selection chips `build_chips_card` instead of falling back to `ORD-1051`).
+  - Resolved `BUG-018` (line item partial quantity parsing for "one kurta in ORD-2031" yielding 1 qty ~₹598.99).
+  - Regression test: `agent/tests/bt1/test_bug015_016_018.py` (4/4 passed).
+  - Real browser verification in Google Chrome: Tests 1.2, 1.3, 1.4, 1.5, 1.6, and 3.4 all PASSED on screen.
+  - `just agent-check`: PASS (`ruff check .` clean, `mypy src` clean across 148 files, 769 passed in 465s, `test_guard.py check` verified).
+- BT-1 Fix 1: Service credentials for auto-approved transitions (`[COMMIT local only]`, commit `5c80fb2`).
+  - Resolved `BUG-017` (configured default service credentials for `agent-executor` and `agent-monitor` in `config.py`).
+  - Regression test: `agent/tests/bt1/test_bug017_service_credentials.py` (1/1 passed).
+  - Real browser verification in Google Chrome: Test 3.1 PASSED on screen.
+- BT-1 Phase A: Full browser test suite executed across all 6 test groups (G1-G6) in Google Chrome. Documented in `docs/BROWSER_TEST_REPORT.md`.
+- BT-1 Phase B: Root cause analysis and bug logging in `docs/BUGLOG.md` (BUG-015 through BUG-019).
+Next:
+- Fix 4 (BUG-019: Pre-dispatch order cancellation workflow).
+- Phase D (Full clean re-run and final summary table).
 - L4.3: demo_check: the demo beats as one command (`[NO COMMIT]`).
   - `scripts/demo_check.py`: Single command verifying all 4 demo beats in fixtures/http mode across runs with state assertions and zero token leakage.
   - `agent/tests/test_demo_check.py`: 5 tests covering all beats, broken expectations, state count equality across runs, http mode refusal without env vars, and zero secrets in output.

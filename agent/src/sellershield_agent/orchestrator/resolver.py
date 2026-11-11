@@ -231,6 +231,21 @@ class ResolverLoop:
         )
         qty_matches = re.findall(r"\b(\d+)\b", clean_text)
         requested_qty: int | None = int(qty_matches[0]) if qty_matches else None
+        if requested_qty is None:
+            word_map = {
+                "one": 1,
+                "single": 1,
+                "two": 2,
+                "both": 2,
+                "pair": 2,
+                "three": 3,
+                "four": 4,
+                "five": 5,
+            }
+            for w, val in word_map.items():
+                if re.search(rf"\b{w}\b", clean_text):
+                    requested_qty = val
+                    break
 
         # Determine matching items from order
         matching_items = []

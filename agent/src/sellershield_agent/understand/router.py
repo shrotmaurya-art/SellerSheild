@@ -19,7 +19,9 @@ from sellershield_agent.understand.schema import (
 
 ORD_REGEX = re.compile(r"\bORD-\d+\b", re.IGNORECASE)
 ORD_CANONICAL_REGEX = re.compile(r"\bORD-\d{3,6}\b", re.IGNORECASE)
-ORD_FLEXIBLE_REGEX = re.compile(r"\b(?:ORD|order)\s*(?:-|#|\s)\s*(\d{3,6})\b", re.IGNORECASE)
+ORD_FLEXIBLE_REGEX = re.compile(
+    r"\b(?:ORD|order|ordr|odr)\s*(?:-|#|\s)\s*(\d{3,6})\b", re.IGNORECASE
+)
 DEVANAGARI_REGEX = re.compile(r"[\u0900-\u097F]")
 
 
@@ -32,7 +34,7 @@ def normalize_order_id(raw: str | None) -> str | None:
         return cleaned
     if re.match(r"^\d{3,6}$", cleaned):
         return f"ORD-{cleaned}"
-    m = re.match(r"^(?:ORD|ORDER)\s*(?:-|#|\s)\s*(\d{3,6})$", cleaned, re.IGNORECASE)
+    m = re.match(r"^(?:ORD|ORDER|ORDR|ODR)\s*(?:-|#|\s)\s*(\d{3,6})$", cleaned, re.IGNORECASE)
     if m:
         return f"ORD-{m.group(1)}"
     return None

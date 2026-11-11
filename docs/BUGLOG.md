@@ -29,21 +29,21 @@ Do not stub `Intent.CANCELLATION` for placed orders that have not yet been dispa
 Recurrences: 0
 Files touched: agent/src/sellershield_agent/orchestrator/pipeline.py
 
-## BUG-018 Return proposal defaults to line total quantity instead of requested partial quantity   [OPEN]   Date: 2026-11-11   Task: BT-1
+## BUG-018 Return proposal defaults to line total quantity instead of requested partial quantity   [FIXED]   Date: 2026-11-11   Task: BT-1
 Symptom (what the human saw, exact error text):
 Customer typing `"I want to return one kurta in ORD-2031"` received a proposal card for `Cotton Kurta (×2)` for `₹1,257.98` instead of 1 kurta (~`₹598.99`).
 Reproduction (command or test):
 Browser acceptance test 3.4 as Diya Nair (`ORD-2031`).
 Root cause (evidence, not guesses):
-Quantity extraction in `router.py` and `resolver.py` does not parse word numerals ("one", "single", "1") from message text when building item selections for `propose_return`, falling back to full line item quantity `oi.qty`.
+Quantity extraction in `router.py` and `resolver.py` did not parse word numerals ("one", "single", "1") from message text when building item selections for `propose_return`, falling back to full line item quantity `oi.qty`.
 Fix (what changed, file and function):
-Pending implementation in Phase C.
+In `agent/src/sellershield_agent/orchestrator/resolver.py:_execute_return_workflow`: added word number mapping (`one`, `single`, `two`, `pair`, etc.) and regex extraction to detect partial return quantity requested in customer message text and clamp to line item `oi.qty`.
 Regression test (path::name):
-Pending.
+agent/tests/bt1/test_bug015_016_018.py::test_bug018_partial_quantity_return
 Do NOT (what must never be reintroduced):
 Do not default to full line item quantity when customer explicitly specifies a partial quantity.
 Recurrences: 0
-Files touched: agent/src/sellershield_agent/understand/router.py, agent/src/sellershield_agent/orchestrator/resolver.py
+Files touched: agent/src/sellershield_agent/orchestrator/resolver.py
 
 ## BUG-017 Saga transition_return fails with 403 Forbidden during auto-approval execution   [FIXED]   Date: 2026-11-11   Task: BT-1
 Symptom (what the human saw, exact error text):
@@ -62,35 +62,38 @@ Do not leave executor or monitor service credentials unset in Settings defaults.
 Recurrences: 0
 Files touched: agent/src/sellershield_agent/config.py
 
-## BUG-016 Order listing and unspecific where-is-order queries fall back to arbitrary ORD-1051   [OPEN]   Date: 2026-11-11   Task: BT-1
+## BUG-016 Order listing and unspecific where-is-order queries fall back to arbitrary ORD-1051   [FIXED]   Date: 2026-11-11   Task: BT-1
 Symptom (what the human saw, exact error text):
 `"show my orders"` or `"where is my order"` (with no ID) outputs `"Order ORD-1051 status is placed."` instead of rendering a list/chips of orders.
 Reproduction (command or test):
 Browser acceptance tests 1.2 and 1.3 as Aarav Mehta.
 Root cause (evidence, not guesses):
-In `pipeline.py`, when `list_my_orders` runs, `sheet.orders` is populated, but `draft_text = template_orders_list(sheet, "en")` fallback handling in `pipeline.py:951` falls back to `template_shipping_status(sheet, "en")`, which takes `next(iter(sheet.allowed_ids))` (`ORD-1051`). Furthermore, unspecific `"where is my order"` query does not provide chips prompting the user to select an order.
+In `pipeline.py`, when `list_my_orders` runs, `sheet.orders` is populated, but `draft_text = template_orders_list(sheet, "en")` fallback handling in `pipeline.py:951` fell back to `template_shipping_status(sheet, "en")`, which took `next(iter(sheet.allowed_ids))` (`ORD-1051`). Furthermore, unspecific `"where is my order"` query did not provide chips prompting the user to select an order.
 Fix (what changed, file and function):
-Pending implementation in Phase C.
+In `agent/src/sellershield_agent/orchestrator/pipeline.py`:
+1. Differentiated order listing requests from single order tracking: if no specific order ID is requested, rendered `template_orders_list(sheet, "en")` and emitted interactive `build_chips_card` containing all accessible order IDs.
+2. Preserved disambiguation chips on "where is my order" queries.
 Regression test (path::name):
-Pending.
+agent/tests/bt1/test_bug015_016_018.py::test_bug016_order_listing_and_chips
 Do NOT (what must never be reintroduced):
 Do not use `next(iter(sheet.allowed_ids))` as a fallback order ID when multiple orders exist and none was specified.
 Recurrences: 0
 Files touched: agent/src/sellershield_agent/orchestrator/pipeline.py, agent/src/sellershield_agent/compose/templates.py
 
-## BUG-015 Router regex misses typos and pipeline loses active order context across conversation turns   [OPEN]   Date: 2026-11-11   Task: BT-1
+## BUG-015 Router regex misses typos and pipeline loses active order context across conversation turns   [FIXED]   Date: 2026-11-11   Task: BT-1
 Symptom (what the human saw, exact error text):
 1. `"wher is ordr 1048 plz"` resulted in `"Order ORD-1051 status is placed."`
 2. Follow-up query `"when will it arrive?"` immediately after asking about `ORD-1048` lost context and responded with `ORD-1051`.
 Reproduction (command or test):
 Browser acceptance tests 1.5 and 1.6 as Aarav Mehta.
 Root cause (evidence, not guesses):
-1. In `understand/router.py`, `ORD_FLEXIBLE_REGEX` only matches `(?:ORD|order)` with strict space/hyphen/hash, failing on typos like `ordr`, `odr`.
-2. In `pipeline.py`, session state does not retrieve previously referenced active `order_id` from preceding turns when the user asks an elliptical follow-up question.
+1. In `understand/router.py`, `ORD_FLEXIBLE_REGEX` only matched `(?:ORD|order)` with strict space/hyphen/hash, failing on typos like `ordr`, `odr`.
+2. In `pipeline.py`, session state did not retrieve previously referenced active `order_id` from preceding turns when the user asks an elliptical follow-up question.
 Fix (what changed, file and function):
-Pending implementation in Phase C.
+1. In `agent/src/sellershield_agent/understand/router.py`: extended `ORD_FLEXIBLE_REGEX` and `normalize_order_id` to recognize common typos `ordr` and `odr`.
+2. In `agent/src/sellershield_agent/orchestrator/pipeline.py`: added multi-turn context resolution. When a turn contains no explicit order ID and is not a general listing query, inspects previous turns in the session history to resolve the currently active order ID (`ORD-1048`).
 Regression test (path::name):
-Pending.
+agent/tests/bt1/test_bug015_016_018.py::test_bug015_typo_and_session_context
 Do NOT (what must never be reintroduced):
 Do not discard previous turn order context in multi-turn conversations.
 Recurrences: 0

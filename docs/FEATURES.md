@@ -10,6 +10,27 @@ Known limits:
 Do not change because:
 Related: BUG ids, ADR ids, spec sections
 
+## F-A45 Context Memory, Typo Extraction & Partial Quantity Workflows   [done]
+What it does:
+Maintains multi-turn context memory across conversation turns, provides typo-tolerant order ID extraction, presents interactive order listing disambiguation chips, and supports partial line-item return proposals based on customer-stated quantity.
+How it works (flow and key files):
+- `agent/src/sellershield_agent/understand/router.py`:
+  - `ORD_FLEXIBLE_REGEX` and `normalize_order_id` parse variations and typos like `ordr 1048` and `odr 1048`.
+- `agent/src/sellershield_agent/orchestrator/pipeline.py`:
+  - Multi-turn context resolution: retrieves preceding turns from session storage to bind elliptical follow-ups (e.g. "when will it arrive?") to active order IDs without re-prompting.
+  - Order listing differentiation: outputs `template_orders_list` and emits `build_chips_card` containing customer order IDs when the customer requests an unspecific order listing or general order inquiry.
+- `agent/src/sellershield_agent/orchestrator/resolver.py`:
+  - Parses word numbers and digits (e.g. "one", "single", "1") to calculate prorated refund amounts and quantities for partial line item returns (e.g. "one kurta in ORD-2031").
+Invariants that must stay true:
+- The LLM never writes to the store directly.
+- Refund calculations use exact integer paise arithmetic without floating-point drift.
+- Multi-turn order context must only access orders owned by the authenticated customer.
+Tests (paths):
+- `agent/tests/bt1/test_bug015_016_018.py` (4 tests)
+Known limits:
+- Word numeral extraction currently handles standard quantities up to 10.
+Related: BUG-015, BUG-016, BUG-018, Spec §4.2, §4.4.
+
 ## F-A43 demo_check: The Demo Beats as One Command   [done]
 What it does:
 One-command verification proving all four three-minute demo beats work end-to-end, in fixture mode and against the real HTTP store, asserting state after each beat and cross-run repeatability with identical state counts.

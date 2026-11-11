@@ -7,6 +7,31 @@ What changed:
 Verification run (commands and result summary):
 Follow-ups:
 
+## 2026-11-11 BT-1 Typo matching, session memory, order listing and partial quantity returns (BUG-015, BUG-016, BUG-018)
+Files: agent/src/sellershield_agent/understand/router.py, agent/src/sellershield_agent/orchestrator/pipeline.py, agent/src/sellershield_agent/orchestrator/resolver.py, agent/tests/bt1/test_bug015_016_018.py, docs/BUGLOG.md, docs/BROWSER_TEST_REPORT.md, docs/CHANGELOG.md
+What changed:
+- **`agent/src/sellershield_agent/understand/router.py` (BUG-015)**:
+  - Extended `ORD_FLEXIBLE_REGEX` and `normalize_order_id` to extract orders with typos like `ordr 1048` and `odr 1048`.
+- **`agent/src/sellershield_agent/orchestrator/pipeline.py` (BUG-015 & BUG-016)**:
+  - Added multi-turn context memory: when elliptical follow-ups like "when will it arrive?" contain no order ID and are not general listings, the pipeline queries previous turns to resolve the active order ID (`ORD-1048`).
+  - Differentiated order listing queries ("show my orders", "where is my order"): renders `template_orders_list` and provides interactive order selection chips (`build_chips_card`) rather than arbitrarily defaulting to `ORD-1051`.
+- **`agent/src/sellershield_agent/orchestrator/resolver.py` (BUG-018)**:
+  - Added word number parsing ("one", "single", "1") to extract partial line item return quantities requested in customer text (e.g. "one kurta in ORD-2031"), generating proposal for 1 kurta (~₹598.99) instead of the full line quantity (2 kurtas, ₹1,257.98).
+- **`agent/tests/bt1/test_bug015_016_018.py`**:
+  - Added regression test suite verifying typo extraction, session order context resolution, order listing chip emission, and partial line item return quantities.
+Verification run:
+- `cd agent; uv run pytest tests/bt1/test_bug015_016_018.py`: 4 passed in 3.65s.
+- `just agent-check`: PASS (`ruff check .` clean, `mypy src` clean across 148 source files, `pytest -q` 769 passed in 465.17s, `test_guard.py check` verified test suite integrity).
+- Real browser verification in Google Chrome (Aarav Mehta & Diya Nair):
+  - Test 1.2: `show my orders` returned full list of 6 orders with interactive tap-chips `[ORD-1048]`, `[ORD-1061]`, etc. (PASS).
+  - Test 1.3: `where is my order` returned interactive selection chips (PASS).
+  - Test 1.4: `where is ORD-1048` returned shipment tracking card with 2 days ETA and ₹899 (PASS).
+  - Test 1.5: `when will it arrive?` maintained `ORD-1048` context and rendered tracking card (PASS).
+  - Test 1.6: `wher is ordr 1048 plz` extracted `ORD-1048` and gave shipping status (PASS).
+  - Test 3.4: `I want to return one kurta in ORD-2031` generated proposal card for ONE kurta for ₹598.99 (PASS).
+Follow-ups:
+- Complete BUG-019 (pre-dispatch order cancellation workflow).
+
 ## 2026-11-11 L4.3 demo_check: the demo beats as one command
 Files: scripts/demo_check.py, justfile, agent/tests/test_demo_check.py, agent/src/sellershield_agent/cases/router.py, agent/src/sellershield_agent/main.py, docs/CHANGELOG.md, docs/FEATURES.md, docs/STATE.md, docs/TASKS.md
 What changed:

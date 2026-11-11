@@ -408,6 +408,38 @@ class ConversationPipeline:
                     )
                     llm_down = True
 
+                if not extracted_order_id and sanitized_text:
+                    is_listing_query = bool(
+                        re.search(
+                            r"\b(?:my\s+orders|all\s+orders|list\s+orders|show\s+orders)\b",
+                            sanitized_text,
+                            re.IGNORECASE,
+                        )
+                    )
+                    is_unspecific_where = bool(
+                        re.search(
+                            r"^\s*where\s+is\s+my\s+order\s*\??\s*$",
+                            sanitized_text,
+                            re.IGNORECASE,
+                        )
+                    )
+                    if not is_listing_query and not is_unspecific_where:
+                        try:
+                            with self.engine.connect() as ctx_conn:
+                                prev_rows = ctx_conn.execute(
+                                    select(messages.c.text)
+                                    .where(messages.c.session_id == session_id)
+                                    .order_by(messages.c.created_at.desc())
+                                    .limit(6)
+                                ).fetchall()
+                                for (p_text,) in prev_rows:
+                                    p_orders = extract_order_ids(p_text or "")
+                                    if p_orders:
+                                        extracted_order_id = p_orders[0].upper()
+                                        break
+                        except Exception:
+                            pass
+
                 if is_return_status_query:
                     intent_val = Intent.RETURN_REQUEST
                 elif is_refund_status_query:
@@ -871,7 +903,10 @@ class ConversationPipeline:
         else:
             # Deterministic template matching the intent
             if intent_val == Intent.SHIPPING_STATUS:
-                draft_text = template_shipping_status(sheet, "en")
+                if not extracted_order_id and sheet.orders:
+                    draft_text = template_orders_list(sheet, "en")
+                else:
+                    draft_text = template_shipping_status(sheet, "en")
             elif intent_val == Intent.ORDER_STATUS:
                 if sheet.orders and not extracted_order_id:
                     draft_text = template_orders_list(sheet, "en")
@@ -949,7 +984,10 @@ class ConversationPipeline:
             elif has_confirmation:
                 verified_text = template_proposal_confirmation(sheet, "en")
             elif intent_val in (Intent.ORDER_STATUS, Intent.SHIPPING_STATUS):
-                verified_text = template_shipping_status(sheet, "en")
+                if not extracted_order_id and sheet.orders:
+                    verified_text = template_orders_list(sheet, "en")
+                else:
+                    verified_text = template_shipping_status(sheet, "en")
             elif intent_val in (Intent.REFUND_STATUS, Intent.REFUND_REQUEST):
                 verified_text = template_refund_status(sheet, "en")
             elif intent_val == Intent.RETURN_REQUEST and is_return_status_query:
@@ -1016,6 +1054,19 @@ class ConversationPipeline:
                     for o in r.data["orders"][:3]:
                         if isinstance(o, dict) and "order_id" in o:
                             cards_to_emit.append(build_order_summary_card(o))
+
+        if not extracted_order_id and sheet.orders:
+            order_chips = [
+                {
+                    "label": str(o.get("order_id", "")),
+                    "action": "track_order",
+                    "order_id": str(o.get("order_id", "")),
+                }
+                for o in sheet.orders[:6]
+                if o.get("order_id")
+            ]
+            if order_chips:
+                cards_to_emit.append(build_chips_card(order_chips))
 
         for c in cards_to_emit:
             yield ("card", c)
